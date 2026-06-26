@@ -33,6 +33,16 @@ echo "Granting executable permissions to ovi.sh"
 chmod +x "$SCRIPT_DIR/ovi.sh"
 echo "Done"
 
+# Change to script dir
+cd "$SCRIPT_DIR"
+
+# Create the venv and activate
+python3 -m venv ovi-env
+source ovi-env/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
 echo "Installing global command(ovi)"
 if [ "$force" = false ]; then
     if [ ! -f "/usr/local/bin/ovi" ] && ! command -v ovi &> /dev/null; then
@@ -53,4 +63,4 @@ if ! sudo ln -sfn "$SCRIPT_DIR/ovi.sh" /usr/local/bin/ovi; then
     echo "Error: Critical failure writing to /usr/local/bin/ovi even with sudo."
     exit 1
 fi
-
+echo "Setup completed successfully
