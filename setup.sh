@@ -63,4 +63,4 @@ if ! sudo ln -sfn "$SCRIPT_DIR/ovi.sh" /usr/local/bin/ovi; then
     echo "Error: Critical failure writing to /usr/local/bin/ovi even with sudo."
     exit 1
 fi
-echo "Setup completed successfully
+echo "Setup completed successfully"
