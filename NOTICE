@@ -1,0 +1,9 @@
+ovi (OpenVINO Interface)
+Copyright 2026 Nathanael Thomas
+
+This product includes software developed by the ovi project 
+and its contributors. It is licensed under the Apache License 2.0.
+
+This project utilizes third-party dependencies installed via PyPI. 
+Please refer to requirements.txt for the specific dependencies installed. 
+These dependencies are governed by their respective open-source licenses.
