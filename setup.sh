@@ -29,8 +29,8 @@ if [ "$EUID" -ne 0 ]; then
     while kill -0 "$$" 2>/dev/null; do sudo -n true; sleep 60; done &
 fi
 
-echo "Granting executable permissions to ovi.sh"
-chmod +x "$SCRIPT_DIR/ovi.sh"
+echo "Granting executable permissions to ovi"
+chmod +x "$SCRIPT_DIR/ovi"
 echo "Done"
 
 # Change to script dir
@@ -59,7 +59,7 @@ if [ "$force" = false ]; then
 fi
 
 echo "Creating global symlink..."
-if ! sudo ln -sfn "$SCRIPT_DIR/ovi.sh" /usr/local/bin/ovi; then
+if ! sudo ln -sfn "$SCRIPT_DIR/ovi" /usr/local/bin/ovi; then
     echo "Error: Critical failure writing to /usr/local/bin/ovi even with sudo."
     exit 1
 fi
