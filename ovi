@@ -2,34 +2,50 @@
 
 import argparse
 import curses
-import os 
+import os
 import sys
 
-os.environ.setdefault('ESCDELAY', '25') 
+os.environ.setdefault('ESCDELAY', '25')
+
+
+def init_colors() -> None:
+    if curses.has_colors():
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_CYAN, -1)
+
 
 def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) -> None:
-    stdscr.move(0, 0)
-    stdscr.clrtobot()
+    stdscr.erase()
     curses.curs_set(0)
+    init_colors()
 
     height, width = stdscr.getmaxyx()
-    if width < 20 or height < len(options) + 3:
-        stdscr.addstr("Terminal too small!")
+    if width < 20 or height < len(options) + 6:
+        try:
+            stdscr.addstr(0, 0, "Terminal too small!")
+        except curses.error:
+            pass
         stdscr.refresh()
         return
 
-    line_width = min(60, width - 1)
+    try:
+        line_width = min(60, max(0, width - 1))
 
-    stdscr.addstr("↑/↓ navigate • enter launch • → configure • esc/q quit.\n", curses.A_DIM)
-    stdscr.addstr("=" * line_width + "\n\n")
+        stdscr.addstr(0, 0, "↑/↓ navigate • enter launch • esc/q quit.\n", curses.A_DIM)
+        stdscr.addstr("=" * line_width + "\n\n")
 
-    for index, option in enumerate(options):
-        if index == selected_index:
-            stdscr.addstr(f" > {option} < \n", curses.A_REVERSE | curses.A_BOLD)
-        else:
-            stdscr.addstr(f"   {option}   \n")
-            
-    stdscr.refresh()
+        for index, option in enumerate(options):
+            if index == selected_index:
+                stdscr.addstr(" ▸ ", curses.A_BOLD)
+                stdscr.addstr(f"{option}\n", curses.color_pair(1) | curses.A_BOLD)
+            else:
+                stdscr.addstr(f"   {option}\n")
+    except curses.error:
+        stdscr.erase()
+        stdscr.addstr(0, 0, "Terminal too small!")
+    finally:
+        stdscr.refresh()
 
 def main_menu(stdscr: curses.window) -> str:
     stdscr.keypad(True)
@@ -77,13 +93,13 @@ def main() -> None:
             option = curses.wrapper(main_menu)
             
             if option == "Exit":
-                print("Exiting application.")
+                print("Exiting ovi")
                 sys.exit(0)
             elif option == "Launch a model":
                 print("Launching a model")
                 
         except KeyboardInterrupt:
-            print("Operation cancelled by user. Exiting.")
+            print("Caught KeyboardInterrupt. Exiting ovi")
             sys.exit(0)
 
 if __name__ == "__main__":
