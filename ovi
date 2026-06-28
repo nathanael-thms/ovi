@@ -7,6 +7,10 @@ import sys
 
 os.environ.setdefault('ESCDELAY', '25')
 
+script_path = os.path.realpath(__file__)
+script_dir = os.path.dirname(script_path)
+models_dir = os.path.join(script_dir, "models")
+
 
 def init_colors() -> None:
     if curses.has_colors():
@@ -65,6 +69,36 @@ def main_menu(stdscr: curses.window) -> str:
             return options[current_row]
         elif key in [27, ord('q'), ord('Q')]:
             return "Exit"
+        
+def model_menu(stdscr: curses.window) -> str:
+    stdscr.keypad(True)
+
+    models = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
+    current_row = 0
+
+    if not models:
+        stdscr.erase()
+        stdscr.addstr(0, 0, "No models found. Press any key to exit")
+        stdscr.refresh()
+        stdscr.getch()
+        return "Exit"
+
+    while True:
+        draw_menu(stdscr, current_row, models)
+        key = stdscr.getch()
+
+        if key == curses.KEY_UP:
+            current_row = (current_row - 1) % len(models)
+        elif key == curses.KEY_DOWN:
+            current_row = (current_row + 1) % len(models)
+        elif key in [curses.KEY_ENTER, 10, 13]:
+            return models[current_row]
+        elif key in [27, ord('q'), ord('Q')]:
+            return "Exit"
+def option_run() -> None:
+    print("Launching model menu...")
+    selected_model=curses.wrapper(model_menu)
+    print(selected_model)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -87,7 +121,7 @@ def main() -> None:
     if args.is_ovi_install:
         print("True")
     elif args.run == "run":
-        print("Running a model")
+        option_run()
     else:
         try:
             option = curses.wrapper(main_menu)
@@ -96,7 +130,7 @@ def main() -> None:
                 print("Exiting ovi")
                 sys.exit(0)
             elif option == "Launch a model":
-                print("Launching a model")
+                option_run()
                 
         except KeyboardInterrupt:
             print("Caught KeyboardInterrupt. Exiting ovi")
