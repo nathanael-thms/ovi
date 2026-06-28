@@ -9,7 +9,11 @@ os.environ.setdefault('ESCDELAY', '25')
 
 script_path = os.path.realpath(__file__)
 script_dir = os.path.dirname(script_path)
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 models_dir = os.path.join(script_dir, "models")
+
+from ovi_core import chat
 
 
 def init_colors() -> None:
@@ -98,7 +102,8 @@ def model_menu(stdscr: curses.window) -> str:
 def option_run() -> None:
     print("Launching model menu...")
     selected_model=curses.wrapper(model_menu)
-    print("Selected model: " + selected_model)
+    print("Launching chat for model: " + selected_model)
+    chat.start_chat_loop(model_name=selected_model, device="CPU")
 
 def main() -> None:
     parser = argparse.ArgumentParser()
