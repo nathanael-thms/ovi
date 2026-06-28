@@ -29,15 +29,17 @@ def start_chat_loop(model_name: str, device: str = "CPU"):
             user_input = input("\n>>> ")
             if not user_input.strip():
                 continue
-                
+
             if user_input.lower() in ("/exit", "/quit"):
-                break
+                print("bye")
+                return
 
             # Core native text streaming block
             pipe.generate(user_input, streamer=_stream_callback)
             print()  # Terminal formatting newline
-            
+
     except KeyboardInterrupt:
         print("\nChat session stopped.")
     finally:
         pipe.finish_chat()
+        OviEngine.mark_idle()

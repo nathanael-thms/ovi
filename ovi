@@ -100,10 +100,15 @@ def model_menu(stdscr: curses.window) -> str:
         elif key in [27, ord('q'), ord('Q')]:
             return "Exit"
 def option_run() -> None:
-    print("Launching model menu...")
-    selected_model=curses.wrapper(model_menu)
-    print("Launching chat for model: " + selected_model)
-    chat.start_chat_loop(model_name=selected_model, device="CPU")
+    while True:
+        print("Launching model menu...")
+        selected_model = curses.wrapper(model_menu)
+        if selected_model == "Exit":
+            return
+        print("Launching chat for model: " + selected_model)
+        chat.start_chat_loop(model_name=selected_model, device="CPU")
+        print("Chat session ended. The model will stay warm for 5 minutes.")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -129,14 +134,15 @@ def main() -> None:
         option_run()
     else:
         try:
-            option = curses.wrapper(main_menu)
-            
-            if option == "Exit":
-                print("Exiting ovi")
-                sys.exit(0)
-            elif option == "Launch a model":
-                option_run()
-                
+            while True:
+                option = curses.wrapper(main_menu)
+
+                if option == "Exit":
+                    print("Exiting ovi")
+                    sys.exit(0)
+                elif option == "Launch a model":
+                    option_run()
+
         except KeyboardInterrupt:
             print("Caught KeyboardInterrupt. Exiting ovi")
             sys.exit(0)
