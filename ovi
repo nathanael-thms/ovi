@@ -98,7 +98,7 @@ def model_menu(stdscr: curses.window) -> str:
 def option_run() -> None:
     print("Launching model menu...")
     selected_model=curses.wrapper(model_menu)
-    print(selected_model)
+    print("Selected model: " + selected_model)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
