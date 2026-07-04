@@ -99,6 +99,7 @@ def model_menu(stdscr: curses.window) -> str:
             return models[current_row]
         elif key in [27, ord('q'), ord('Q')]:
             return "Exit"
+        
 def option_run() -> None:
     while True:
         print("Launching model menu...")
@@ -106,9 +107,8 @@ def option_run() -> None:
         if selected_model == "Exit":
             return
         print("Launching chat for model: " + selected_model)
-        chat.start_chat_loop(model_name=selected_model, device="CPU")
-        print("Chat session ended. The model will stay warm for 5 minutes.")
-
+        chat.start_chat_loop(model_name=selected_model)
+        return
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -119,18 +119,17 @@ def main() -> None:
         help="Check if this is an ovi installation, used by setup.sh for validation"
     )
 
-    parser.add_argument(
-        "run",
-        nargs="?",
-        choices=["run"],
-        help="Run a model"
-    )
+    subparsers = parser.add_subparsers(dest="command")
+    run_parser = subparsers.add_parser("run", help="Run a model")
+    run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
 
     args = parser.parse_args()
 
     if args.is_ovi_install:
         print("True")
-    elif args.run == "run":
+    elif args.command == "run" and args.model_name:
+        chat.start_chat_loop(model_name=args.model_name)
+    elif args.command == "run":
         option_run()
     else:
         try:
