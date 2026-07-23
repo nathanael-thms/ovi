@@ -24,10 +24,12 @@ def init_colors() -> None:
 
 
 def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) -> None:
+    # Clear the screen and set up colors
     stdscr.erase()
     curses.curs_set(0)
     init_colors()
 
+    # Get terminal dimensions and check if the terminal is too small
     height, width = stdscr.getmaxyx()
     if width < 20 or height < len(options) + 6:
         try:
@@ -36,7 +38,8 @@ def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) ->
             pass
         stdscr.refresh()
         return
-
+    
+    # Draw the menu options with the selected option highlighted
     try:
         line_width = min(60, max(0, width - 1))
 
@@ -101,14 +104,10 @@ def model_menu(stdscr: curses.window) -> str:
             return "Exit"
         
 def option_run() -> None:
-    while True:
-        print("Launching model menu...")
-        selected_model = curses.wrapper(model_menu)
-        if selected_model == "Exit":
-            return
-        print("Launching chat for model: " + selected_model)
-        chat.start_chat_loop(model_name=selected_model)
-        return
+    print("Launching model menu...")
+    selected_model = curses.wrapper(model_menu)
+    print("Launching chat for model: " + selected_model)
+    chat.start_chat_loop(model_name=selected_model)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -133,14 +132,13 @@ def main() -> None:
         option_run()
     else:
         try:
-            while True:
-                option = curses.wrapper(main_menu)
+            option = curses.wrapper(main_menu)
 
-                if option == "Exit":
-                    print("Exiting ovi")
-                    sys.exit(0)
-                elif option == "Launch a model":
-                    option_run()
+            if option == "Exit":
+                print("Exiting ovi")
+                sys.exit(0)
+            elif option == "Launch a model":
+                option_run()
 
         except KeyboardInterrupt:
             print("Caught KeyboardInterrupt. Exiting ovi")

@@ -17,7 +17,6 @@ def _stream_callback(token_subword: str) -> bool:
     return False  # False continues execution; True aborts generation
 
 def start_chat_loop(model_name: str, device: str = "CPU"):
-    # Retrieves the pre-loaded engine or compiles it instantly on the fly
     pipe = OviEngine.get_pipeline(model_name, device)
     
     pipe.start_chat()
@@ -42,4 +41,3 @@ def start_chat_loop(model_name: str, device: str = "CPU"):
         print("\nChat session stopped.")
     finally:
         pipe.finish_chat()
-        OviEngine.mark_idle()
