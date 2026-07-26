@@ -7,10 +7,12 @@ def _stream_callback(token_subword: str) -> bool:
     return False  # False continues execution; True aborts generation
 
 def start_chat_loop(model_name: str, device: str = "CPU"):
+    # Start a chat loop with the specified model and device
     pipe = OviEngine.get_pipeline(model_name, device)
     
     pipe.start_chat()
     print(f"\nConnected to raw model '{model_name}'. Type '/exit' to quit.")
+    # Display a separator line
     print("-" * 60)
 
     try:

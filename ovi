@@ -61,6 +61,7 @@ def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) ->
         stdscr.refresh()
 
 def main_menu(stdscr: curses.window) -> str:
+    # Set up the terminal for menu navigation, and draw the initial menu
     stdscr.keypad(True)
     
     options = ["Launch a model", "Exit"]
@@ -82,6 +83,7 @@ def main_menu(stdscr: curses.window) -> str:
 def model_menu(stdscr: curses.window) -> str:
     stdscr.keypad(True)
 
+    # Get the list of available models from the models directory
     models = [d for d in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, d))]
     current_row = 0
 
@@ -112,6 +114,7 @@ def option_run() -> None:
     chat.start_chat_loop(model_name=selected_model)
 
 def main() -> None:
+    # Parse command-line arguments
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -125,10 +128,11 @@ def main() -> None:
     run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
 
     args = parser.parse_args()
-
+    # Handle the main application flow
     if args.is_ovi_install:
         print("True")
     elif args.command == "run" and args.model_name:
+        # Directly launch the chat loop if a model has been specified
         chat.start_chat_loop(model_name=args.model_name)
     elif args.command == "run":
         option_run()
