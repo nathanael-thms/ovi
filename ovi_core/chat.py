@@ -1,15 +1,5 @@
 # ovi_core/chat.py
 
-import os
-import sys
-
-script_path = os.path.realpath(__file__)
-script_dir = os.path.dirname(script_path)
-root_dir = os.path.dirname(script_dir)
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-models_dir = os.path.join(script_dir, "models")
-
 from ovi_core.load import OviEngine
 
 def _stream_callback(token_subword: str) -> bool:
