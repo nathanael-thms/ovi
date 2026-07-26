@@ -114,6 +114,10 @@ def option_run() -> None:
     chat.start_chat_loop(model_name=selected_model)
 
 def main() -> None:
+    # Intercept "help" and convert it to "-h" for argparse compatibility
+    if len(sys.argv) > 1 and sys.argv[1] == "help":
+        sys.argv[1] = "-h"
+        
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
 
