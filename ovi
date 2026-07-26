@@ -11,9 +11,11 @@ script_path = os.path.realpath(__file__)
 script_dir = os.path.dirname(script_path)
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
-models_dir = os.path.join(script_dir, "models")
 
 from ovi_core import chat
+from ovi_core.path import get_models_root
+
+models_dir = get_models_root()
 
 
 def init_colors() -> None:

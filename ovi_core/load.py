@@ -3,6 +3,8 @@ import os
 import sys
 import openvino_genai as ov_genai
 
+from ovi_core.path import get_model_path
+
 
 class OviEngine:
     # Persistent global memory variables
@@ -16,11 +18,7 @@ class OviEngine:
         Retrieves the raw OpenVINO model pipeline from memory and compiles the IR graph.
         """
         
-        script_path = os.path.realpath(__file__)
-        script_dir = os.path.dirname(script_path)
-        grandparent_dir = os.path.dirname(script_dir)
-        models_root = os.path.join(grandparent_dir, "models")
-        model_dir = os.path.join(models_root, model_name)
+        model_dir = get_model_path(model_name)
 
         required_xml = os.path.join(model_dir, "openvino_model.xml")
         if not os.path.exists(required_xml):
