@@ -45,7 +45,7 @@ def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) ->
     try:
         line_width = min(60, max(0, width - 1))
 
-        stdscr.addstr(0, 0, "↑/↓ navigate • enter launch • esc/q quit.\n", curses.A_DIM)
+        stdscr.addstr(0, 0, "↑/↓ navigate • ← back • enter launch • esc/q quit.\n", curses.A_DIM)
         stdscr.addstr("=" * line_width + "\n\n")
 
         for index, option in enumerate(options):
@@ -77,8 +77,10 @@ def main_menu(stdscr: curses.window) -> str:
             current_row = (current_row + 1) % len(options)
         elif key in [curses.KEY_ENTER, 10, 13]:
             return options[current_row]
+        elif key in [curses.KEY_LEFT]:
+            return "Back"
         elif key in [27, ord('q'), ord('Q')]:
-            return "Exit"
+            sys.exit(0)
         
 def model_menu(stdscr: curses.window) -> str:
     stdscr.keypad(True)
@@ -104,12 +106,18 @@ def model_menu(stdscr: curses.window) -> str:
             current_row = (current_row + 1) % len(models)
         elif key in [curses.KEY_ENTER, 10, 13]:
             return models[current_row]
+        elif key in [curses.KEY_LEFT]:
+            return "Back"
         elif key in [27, ord('q'), ord('Q')]:
-            return "Exit"
-        
+            sys.exit(0)
+
 def option_run() -> None:
     print("Launching model menu...")
     selected_model = curses.wrapper(model_menu)
+
+    if selected_model == "Back":
+        return
+
     print("Launching chat for model: " + selected_model)
     chat.start_chat_loop(model_name=selected_model)
 
@@ -117,7 +125,7 @@ def main() -> None:
     # Intercept "help" and convert it to "-h" for argparse compatibility
     if len(sys.argv) > 1 and sys.argv[1] == "help":
         sys.argv[1] = "-h"
-        
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
 
