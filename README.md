@@ -25,7 +25,7 @@ ovi is fully free, open‑source, and licensed under the Apache License 2.0.
 ---
 
 > [!WARNING]
-> Disclaimer  
+> **Disclaimer**  
 >
 > ovi is an independent, community‑driven project and is not affiliated with Intel Corporation.
 > Intel and OpenVINO are trademarks of Intel Corporation or its subsidiaries.
