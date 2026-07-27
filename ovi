@@ -4,6 +4,21 @@ import argparse
 import curses
 import os
 import sys
+import subprocess
+
+# Check if we are already running inside a virtual environment
+if sys.prefix == sys.base_prefix:
+    # Use realpath to resolve the true folder if ovi is symlinked
+    real_script_path = os.path.realpath(__file__)
+    script_dir = os.path.dirname(real_script_path)
+    VENV_PYTHON = os.path.join(script_dir, "ovi-env", "bin", "python")
+
+    if os.path.exists(VENV_PYTHON):
+        # Relaunch the script using the venv's Python, passing all arguments
+        result = subprocess.run([VENV_PYTHON] + sys.argv)
+        sys.exit(result.returncode)
+    else:
+        sys.exit(f"Error: Virtual environment not found at {VENV_PYTHON}. Please run setup.sh first.")
 
 os.environ.setdefault('ESCDELAY', '25')
 
