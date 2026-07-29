@@ -1,17 +1,3 @@
-# Copyright 2026 Nathanael Thomas
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 # ovi_core/chat.py
 
 import atexit
@@ -74,11 +60,11 @@ def _record_history_entry(entry: str) -> None:
     if add_history is None:
         return
 
-    # # Add the entry to the history, handling any potential exceptions
-    # try:
-    #     add_history(entry)
-    # except (AttributeError, OSError):
-    #     pass
+    # Add the entry to the history, handling any potential exceptions
+    try:
+        add_history(entry)
+    except (AttributeError, OSError):
+        pass
 
 
 def start_chat_loop(model_name: str, device: str = "CPU"):
@@ -99,7 +85,11 @@ def start_chat_loop(model_name: str, device: str = "CPU"):
             if not user_input.strip():
                 continue
 
-            _record_history_entry(user_input)
+            # Check if the last entry in the history is the same as the current input to avoid duplicates
+            if readline is not None and readline.get_current_history_length() > 0:
+                last_entry = readline.get_history_item(readline.get_current_history_length())
+                if last_entry != user_input:
+                    _record_history_entry(user_input)
 
             if user_input.lower() in ("/exit", "/quit"):
                 print("bye")
