@@ -1,2 +1,3 @@
 ovi-env/
 __pycache__/
+.coverage
