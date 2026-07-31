@@ -142,7 +142,7 @@ def option_run() -> None:
     print("Launching model menu...")
     selected_model = curses.wrapper(model_menu)
 
-    if selected_model == "Back":
+    if selected_model == "Back" or selected_model == "Exit":
         return
 
     print("Launching chat for model: " + selected_model)
