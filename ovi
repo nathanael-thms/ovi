@@ -18,7 +18,6 @@ import argparse
 import curses
 import os
 import sys
-import subprocess
 
 # Check if we are already running inside a virtual environment
 if sys.prefix == sys.base_prefix:
@@ -29,8 +28,7 @@ if sys.prefix == sys.base_prefix:
 
     if os.path.exists(VENV_PYTHON):
         # Relaunch the script using the venv's Python, passing all arguments
-        result = subprocess.run([VENV_PYTHON] + sys.argv)
-        sys.exit(result.returncode)
+        os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
     else:
         sys.exit(f"Error: Virtual environment not found at {VENV_PYTHON}. Please run setup.sh first.")
 
