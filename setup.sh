@@ -36,12 +36,8 @@ echo "Done"
 # Change to script dir
 cd "$SCRIPT_DIR"
 
-# Install python3-venv if not present
-if ! python3 -m venv --help &> /dev/null; then
-    echo "python3-venv not found. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y python3-venv
-fi
+# Install python3.14-venv if not present
+sudo apt install -y python3.14-venv
 
 # Create the venv and activate
 python3 -m venv ovi-env
