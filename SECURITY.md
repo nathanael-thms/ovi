@@ -2,7 +2,9 @@
 
 ## Supported Versions
 
-When the first release is published, a table will be shown here
+| Version | Supported          |
+| ------- | ------------------ |
+| 0.1.x   | :white_check_mark: |
 
 ## Reporting a vulnerability
 
