@@ -31,4 +31,6 @@ A good PR includes:
 
 By contributing to this project, you agree that your contributions will be licensed under the Apache License 2.0.
 
+By contributing to the documentation, you agree that your contributions will be licensed under CC BY-SA 4.0.
+
 Thank you for helping improve ovi!
