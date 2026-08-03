@@ -4,6 +4,10 @@ ovi is a lightweight local model server that delivers an ollama‑style develope
 
 ovi is in early development. Core functionality is usable, but the project is evolving rapidly as the runtime and CLI mature.
 
+## Documentation
+
+Documentation is available at [https://ovi.nattho.com](https://ovi.nattho.com).
+
 ## Current Features
 - **Local Execution** — Run raw OpenVINO‑format models directly from your `project_root/models/` directory.
 
