@@ -36,11 +36,39 @@ echo "Done"
 # Change to script dir
 cd "$SCRIPT_DIR"
 
-# Install python3.14-venv if not present
-sudo apt install -y python3.14-venv
+echo "Ensuring Python venv is available..."
 
-# Create the venv and activate
-python3 -m venv ovi-env
+PYTHON_BIN="$(command -v python3 || true)"
+if [ -z "$PYTHON_BIN" ]; then
+    echo "Error: python3 not found."
+    exit 1
+fi
+
+# Look for venv module, if it is not present, install it
+if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
+    echo "python3 venv module missing."
+
+    # Detect Python minor version
+    PY_VER="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+
+    # Install correct venv package based on manager type
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update
+        sudo apt install -y "python${PY_VER}-venv"
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y "python3"
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y "python3"
+    else
+        echo "Error: apt, dnf, and yum are not available. Cannot continue."
+        exit 1
+    fi
+
+    # Retry venv creation (fatal if it fails)
+    "$PYTHON_BIN" -m venv ovi-env
+fi
+
+# Activate the environment
 source ovi-env/bin/activate
 
 # Install dependencies
