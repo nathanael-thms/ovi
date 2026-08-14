@@ -31,3 +31,7 @@ def get_models_root() -> str:
 def get_model_path(model_name: str) -> str:
     """Return the absolute path for a named model directory."""
     return os.path.join(get_models_root(), model_name)
+
+def get_model_file_path(model_name: str) -> str:
+    """Return the absolute path for a specific file within a named model directory."""
+    return os.path.join(get_model_path(model_name), "Modelfile")

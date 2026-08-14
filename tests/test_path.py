@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ovi_core.path import get_model_path, get_models_root, get_repo_root
+from ovi_core.path import get_model_file_path, get_model_path, get_models_root, get_repo_root
 
 
 def test_repo_root_matches_workspace_root():
@@ -13,3 +13,6 @@ def test_models_root_points_to_repo_models_directory():
 
 def test_model_path_joins_named_model_dir():
     assert Path(get_model_path("demo-model")).resolve() == Path(get_models_root()).resolve() / "demo-model"
+
+def test_model_file_path_joins_named_model_dir_with_modelfile():
+    assert Path(get_model_file_path("demo-model")).resolve() == Path(get_models_root()).resolve() / "demo-model" / "Modelfile"
