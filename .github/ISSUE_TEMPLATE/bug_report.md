@@ -27,5 +27,8 @@ A clear description of what you expected to happen.
 Paste terminal logs here.
 ```
 
+**Is there a pull request associated with this issue**
+If so, provide the link to it
+
 **Additional Context**
 Add any other context about the problem here.
