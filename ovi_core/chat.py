@@ -4,6 +4,7 @@ import atexit
 import os
 
 from ovi_core.load import OviEngine
+from ovi_core.parse_modelfile import get_device_from_modelfile
 
 try:
     import readline
@@ -67,8 +68,9 @@ def _record_history_entry(entry: str) -> None:
         pass
 
 
-def start_chat_loop(model_name: str, device: str = "CPU"):
+def start_chat_loop(model_name: str):
     # Start a chat loop with the specified model and device
+    device = get_device_from_modelfile(model_name)
     pipe = OviEngine.get_pipeline(model_name, device)
 
     pipe.start_chat()
