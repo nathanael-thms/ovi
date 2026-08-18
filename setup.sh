@@ -24,9 +24,6 @@ if [ "$EUID" -ne 0 ]; then
         echo "Error: Authentication failed. Aborting installation."
         exit 1
     fi
-    
-    # Keep sudo alive for as long as script runs
-    while kill -0 "$$" 2>/dev/null; do sudo -n true; sleep 60; done &
 fi
 
 echo "Granting executable permissions to ovi"
