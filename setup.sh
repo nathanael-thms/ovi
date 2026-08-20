@@ -146,15 +146,15 @@ if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
     # Detect Python minor version
     PY_VER="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 
-    # Install correct venv package based on manager type
-    if command -v apt >/dev/null 2>&1; then
-        sudo apt install -y "python${PY_VER}-venv"
-    elif command -v dnf >/dev/null 2>&1; then
-        sudo dnf install -y "python3"
-    elif command -v yum >/dev/null 2>&1; then
-        sudo yum install -y "python3"
+    if [ -n "$PKG_MANAGER" ]; then
+        echo "Installing python venv package via $PKG_MANAGER..."
+        case $PKG_MANAGER in
+            apt)     $INSTALL_CMD "python${PY_VER}-venv" ;;
+            dnf|yum) $INSTALL_CMD "python3" ;;
+            pacman)  $INSTALL_CMD "python" ;; # Arch bundles venv inside the core package
+        esac
     else
-        echo "Error: apt, dnf, and yum are not available. Cannot continue."
+        echo "Error: Unknown package manager. Cannot automatically install python venv."
         exit 1
     fi
 
