@@ -147,6 +147,10 @@ fi
 # Activate the environment
 source ovi-env/bin/activate
 
+# Upgrade pip inside the venv
+echo "Upgrading virtual environment package tools (pip)..."
+python3 -m pip install --upgrade pip setuptools wheel
+
 # Install dependencies
 pip install -r requirements.txt
 
