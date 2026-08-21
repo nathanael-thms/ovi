@@ -67,57 +67,39 @@ if [ -n "$PKG_MANAGER" ]; then
         $UPDATE_CMD
     fi
 
-    # Ensure OpenCL Core Loader is installed
-    if ! ldconfig -p 2>/dev/null | grep -q "libOpenCL.so.1"; then
-        echo "OpenCL loader missing. Installing opencl library..."
-        case $PKG_MANAGER in
-            apt)          $INSTALL_CMD ocl-icd-libopencl1 ;;
-            dnf|yum)      $INSTALL_CMD ocl-icd ;;
-            pacman)       $INSTALL_CMD ocl-icd ;;
-        esac
-    fi
+    # Install opencl library
+    echo "Installing opencl library..."
+    case $PKG_MANAGER in
+        apt)          $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd ;;
+        dnf|yum)      $INSTALL_CMD ocl-icd intel-opencl ;;
+        pacman)       $INSTALL_CMD ocl-icd intel-compute-runtime ;;
+    esac
 
-    # Detect if Intel Graphics hardware capability is passed into the environment
+    # Fix hardware device nodes permissions if they are passed into the environment
     if [ -e /dev/dri/renderD128 ]; then
-        echo "Graphics render nodes detected (/dev/dri/renderD128)."
+        echo "Graphics render nodes detected (/dev/dri/renderD128). Configuring permissions..."
 
-        # Verify if the host environment uses Intel graphics drivers
-        if lsmod 2>/dev/null | grep -qE "i915|xe"; then
-            echo "Intel Graphics hardware modules (i915/xe) confirmed active."
-
-            # Install Intel Compute Runtime drivers if vendor file is missing
-            if [ ! -f /etc/OpenCL/vendors/intel.icd ] && [ ! -f /etc/OpenCL/vendors/intel-neo.icd ]; then
-                echo "Intel Compute drivers missing. Installing..."
-                case $PKG_MANAGER in
-                    apt)          $INSTALL_CMD intel-opencl-icd ;;
-                    dnf|yum)      $INSTALL_CMD intel-opencl ;;
-                    pacman)       $INSTALL_CMD intel-compute-runtime ;;
-                esac
+        # Explicitly force correct group ownership on primary card devices (e.g., card0, card1)
+        for card in /dev/dri/card*; do
+            if [ -e "$card" ]; then
+                sudo chown root:video "$card"
+                sudo chmod 660 "$card"
             fi
+        done
+
+        # Explicitly force correct group ownership on the compute render block
+        if getent group render >/dev/null 2>&1; then
+            sudo chown root:render /dev/dri/renderD128
+        else
+            sudo chown root:video /dev/dri/renderD128
         fi
+        sudo chmod 660 /dev/dri/renderD128
+        echo "Hardware node permission overrides applied successfully."
 
-        # Handle GPU Node Access Permissions dynamically
         if [ "$REAL_USER" != "root" ]; then
-            echo "Ensuring user '$REAL_USER' has permissions for GPU hardware..."
-
-            # Check which group owns the render node on this specific system
-            RENDER_GROUP=$(ls -l /dev/dri/renderD128 2>/dev/null | awk '{print $4}' || echo "")
-
-            # If the group is listed as 'root', force it to 'render' or 'video'
-            if [ "$RENDER_GROUP" = "root" ]; then
-                echo "Warning: /dev/dri/renderD128 group is incorrectly set to 'root'."
-                if getent group render >/dev/null 2>&1; then
-                    sudo chown root:render /dev/dri/renderD128
-                    RENDER_GROUP="render"
-                elif getent group video >/dev/null 2>&1; then
-                    sudo chown root:video /dev/dri/renderD128
-                    RENDER_GROUP="video"
-                fi
-                echo "Fixed hardware node ownership."
-            fi
-
-            for grp in video render "$RENDER_GROUP"; do
-                if [ -n "$grp" ] && [ "$grp" != "root" ] && getent group "$grp" >/dev/null 2>&1; then
+            echo "Ensuring user '$REAL_USER' has access to hardware groups..."
+            for grp in video render; do
+                if getent group "$grp" >/dev/null 2>&1; then
                     if ! groups "$REAL_USER" | grep -q "\b$grp\b"; then
                         echo "Adding $REAL_USER to $grp group..."
                         sudo usermod -aG "$grp" "$REAL_USER"
