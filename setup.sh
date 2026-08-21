@@ -23,6 +23,7 @@ REAL_USER="${SUDO_USER:-$(whoami)}"
 PKG_MANAGER=""
 INSTALL_CMD=""
 UPDATE_CMD=""
+IS_RHEL_DERIVATIVE=false
 
 # Define Package managers and commands
 if command -v apt >/dev/null 2>&1; then
@@ -32,11 +33,18 @@ if command -v apt >/dev/null 2>&1; then
 elif command -v dnf >/dev/null 2>&1; then
     PKG_MANAGER="dnf"
     INSTALL_CMD="sudo dnf install -y"
-    UPDATE_CMD=""  # dnf updates repositories automatically during install
+    UPDATE_CMD=""
+    # Check if we are specifically on an Enterprise Linux variant (Rocky, RHEL, AlmaLinux)
+    if [ -f /etc/redhat-release ] && ! grep -qi "Fedora" /etc/redhat-release; then
+        IS_RHEL_DERIVATIVE=true
+    fi
 elif command -v yum >/dev/null 2>&1; then
     PKG_MANAGER="yum"
     INSTALL_CMD="sudo yum install -y"
     UPDATE_CMD=""
+    if [ -f /etc/redhat-release ] && ! grep -qi "Fedora" /etc/redhat-release; then
+        IS_RHEL_DERIVATIVE=true
+    fi
 elif command -v pacman >/dev/null 2>&1; then
     PKG_MANAGER="pacman"
     INSTALL_CMD="sudo pacman -S --noconfirm"
@@ -62,7 +70,18 @@ cd "$SCRIPT_DIR"
 if [ -n "$PKG_MANAGER" ]; then
     echo "Checking system-level dependencies for OpenVINO GPU acceleration..."
 
-    # Run the system update command
+    # If the user is on Rocky/RHEL, configure the enterprise package channels
+    if [ "$IS_RHEL_DERIVATIVE" = true ]; then
+        echo "Enterprise Linux detected (Rocky/RHEL). Enabling CRB and EPEL repositories..."
+        # 1. Enable Rocky's hidden CodeReady Builder (CRB) repository
+        sudo dnf config-manager --set-enabled crb || sudo dnf config-manager --set-enabled powertools || true
+
+        # 2. Ensure EPEL repository is present
+        if ! rpm -q epel-release >/dev/null 2>&1; then
+            $INSTALL_CMD https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm || true
+        fi
+    fi
+
     if [ -n "$UPDATE_CMD" ]; then
         $UPDATE_CMD
     fi
@@ -70,9 +89,22 @@ if [ -n "$PKG_MANAGER" ]; then
     # Install opencl library
     echo "Installing opencl library..."
     case $PKG_MANAGER in
-        apt)          $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd ;;
-        dnf|yum)      $INSTALL_CMD ocl-icd intel-opencl ;;
-        pacman)       $INSTALL_CMD ocl-icd intel-compute-runtime ;;
+        apt)
+            $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd
+            ;;
+        dnf|yum)
+            if [ "$IS_RHEL_DERIVATIVE" = true ]; then
+                # Rocky Linux 9 / Enterprise Linux definitive OpenCL hardware translation map
+                # (Uses standard appstream/crb DRI and OpenCL driver files)
+                $INSTALL_CMD ocl-icd mesa-dri-drivers libdrm
+            else
+                # Vanilla Fedora open distribution map
+                $INSTALL_CMD ocl-icd intel-opencl
+            fi
+            ;;
+        pacman)
+            $INSTALL_CMD ocl-icd intel-compute-runtime
+            ;;
     esac
 
     # Fix hardware device nodes permissions if they are passed into the environment
