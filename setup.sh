@@ -145,44 +145,50 @@ else
     echo "Warning: Unknown or unsupported package manager. Skipping automated GPU driver checks."
 fi
 
-echo "Ensuring Python venv is available..."
+echo "Ensuring compatible Python environment is available..."
 
-PYTHON_BIN="$(command -v python3 || true)"
-if [ -z "$PYTHON_BIN" ]; then
-    if [ -n "$PKG_MANAGER" ]; then
-        echo "Installing python package via $PKG_MANAGER..."
-        case $PKG_MANAGER in
-            apt)     $INSTALL_CMD "python3" ;;
-            dnf|yum) $INSTALL_CMD "python3" ;;
-            pacman)  $INSTALL_CMD "python" ;;
-        esac
-    else
-        echo "Error: Unknown package manager. Cannot automatically install python."
-        exit 1
+if [ "$IS_RHEL_DERIVATIVE" = true ] && [ "$PKG_MANAGER" = "dnf" ]; then
+    if ! command -v python3.14 >/dev/null 2>&1; then
+        echo "Installing modern python3.14 from AppStream..."
+        $INSTALL_CMD python3.14 python3.14-pip
     fi
-    PYTHON_BIN="$(command -v python3 || true)"
 fi
 
-# Look for venv module, if it is not present, install it
-if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
-    echo "python3 venv module missing."
+# Track down the best available modern execution binary path
+PYTHON_BIN=""
+for bin in python3.14 python3.13 python3.12 python3.11 python3; do
+    if command -v "$bin" >/dev/null 2>&1; then
+        PYTHON_BIN="$(command -v "$bin")"
+        echo "Selected Python engine binary: $bin"
+        break
+    fi
+done
 
-    # Detect Python minor version
+if [ -z "$PYTHON_BIN" ]; then
+    echo "Error: python3 not found. Cannot continue."
+    exit 1
+fi
+
+# Look for venv module using our modern binary engine. If it is missing, install it
+if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
+    echo "Python venv module missing for selected engine."
+
+    # Detect the minor version of our execution target
     PY_VER="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 
     if [ -n "$PKG_MANAGER" ]; then
-        echo "Installing python venv package via $PKG_MANAGER..."
+        echo "Installing matching python venv package via $PKG_MANAGER..."
         case $PKG_MANAGER in
             apt)     $INSTALL_CMD "python${PY_VER}-venv" ;;
-            dnf|yum) $INSTALL_CMD "python3" ;;
-            pacman)  $INSTALL_CMD "python" ;; # Arch bundles venv inside the core package
+            dnf|yum) $INSTALL_CMD "python${PY_VER}" ;;
+            pacman)  $INSTALL_CMD "python" ;;
         esac
     else
         echo "Error: Unknown package manager. Cannot automatically install python venv."
         exit 1
     fi
 
-    # Retry venv creation (fatal if it fails)
+    # Final retry to create the environment
     "$PYTHON_BIN" -m venv ovi-env
 fi
 
