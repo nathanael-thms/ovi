@@ -149,8 +149,18 @@ echo "Ensuring Python venv is available..."
 
 PYTHON_BIN="$(command -v python3 || true)"
 if [ -z "$PYTHON_BIN" ]; then
-    echo "Error: python3 not found."
-    exit 1
+    if [ -n "$PKG_MANAGER" ]; then
+        echo "Installing python package via $PKG_MANAGER..."
+        case $PKG_MANAGER in
+            apt)     $INSTALL_CMD "python3" ;;
+            dnf|yum) $INSTALL_CMD "python3" ;;
+            pacman)  $INSTALL_CMD "python" ;;
+        esac
+    else
+        echo "Error: Unknown package manager. Cannot automatically install python."
+        exit 1
+    fi
+    PYTHON_BIN="$(command -v python3 || true)"
 fi
 
 # Look for venv module, if it is not present, install it
