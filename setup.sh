@@ -68,19 +68,10 @@ echo "Done"
 cd "$SCRIPT_DIR"
 
 if [ -n "$PKG_MANAGER" ]; then
+  if [ "$IS_RHEL_DERIVATIVE" = true ]; then
+    echo "--> Warning: Automatic GPU acceleration dependencies installation not supported on enterprise RHEL enviroments"
+  else
     echo "Checking system-level dependencies for OpenVINO GPU acceleration..."
-
-    # If the user is on Rocky/RHEL, configure the enterprise package channels
-    if [ "$IS_RHEL_DERIVATIVE" = true ]; then
-        echo "Enterprise Linux detected (Rocky/RHEL). Enabling CRB and EPEL repositories..."
-        # 1. Enable Rocky's hidden CodeReady Builder (CRB) repository
-        sudo dnf config-manager --set-enabled crb || sudo dnf config-manager --set-enabled powertools || true
-
-        # 2. Ensure EPEL repository is present
-        if ! rpm -q epel-release >/dev/null 2>&1; then
-            $INSTALL_CMD https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm || true
-        fi
-    fi
 
     if [ -n "$UPDATE_CMD" ]; then
         $UPDATE_CMD
@@ -93,14 +84,7 @@ if [ -n "$PKG_MANAGER" ]; then
             $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd
             ;;
         dnf|yum)
-            if [ "$IS_RHEL_DERIVATIVE" = true ]; then
-                # Rocky Linux 9 / Enterprise Linux definitive OpenCL hardware translation map
-                # (Uses standard appstream/crb DRI and OpenCL driver files)
-                $INSTALL_CMD ocl-icd mesa-dri-drivers libdrm
-            else
-                # Vanilla Fedora open distribution map
-                $INSTALL_CMD ocl-icd intel-opencl
-            fi
+            $INSTALL_CMD ocl-icd intel-opencl
             ;;
         pacman)
             $INSTALL_CMD ocl-icd intel-compute-runtime
@@ -141,6 +125,7 @@ if [ -n "$PKG_MANAGER" ]; then
             done
         fi
     fi
+  fi
 else
     echo "Warning: Unknown or unsupported package manager. Skipping automated GPU driver checks."
 fi
