@@ -132,11 +132,22 @@ fi
 
 echo "Ensuring compatible Python environment is available..."
 
-if [ "$IS_RHEL_DERIVATIVE" = true ] && [ "$PKG_MANAGER" = "dnf" ]; then
-    if ! command -v python3.14 >/dev/null 2>&1; then
-        echo "Installing modern python3.14 from AppStream..."
-        $INSTALL_CMD python3.14 python3.14-pip
+HAS_MODERN_PYTHON=false
+for ver in 3.14 3.13 3.12 3.11; do
+    if command -v "python${ver}" >/dev/null 2>&1; then
+        HAS_MODERN_PYTHON=true
+       break
     fi
+done
+
+# Only force-install a modern package if the system is completely lacking one
+if [ "$HAS_MODERN_PYTHON" = false ]; then
+    echo "Installing modern python3.14..."
+    case $PKG_MANAGER in
+        apt)     $INSTALL_CMD "python3.14" ;;
+        dnf|yum) $INSTALL_CMD "python3.14" ;;
+        pacman)  $INSTALL_CMD "python" ;;
+    esac
 fi
 
 # Track down the best available modern execution binary path
