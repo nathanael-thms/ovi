@@ -2,6 +2,7 @@
 set -euo pipefail
 
 force=false
+verbose=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -9,11 +10,24 @@ while [[ $# -gt 0 ]]; do
       force=true
       shift
       ;;
+    --verbose)
+      verbose=true
+      shift
+      ;;
     *)
       shift
       ;;
   esac
 done
+
+# Setup background tool redirection based on verbose flag
+if [ "$verbose" = true ]; then
+    exec {TOOL_OUT}>&1
+    exec {TOOL_ERR}>&2
+else
+    exec {TOOL_OUT}>/dev/null
+    exec {TOOL_ERR}>/dev/null
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -25,30 +39,47 @@ INSTALL_CMD=""
 UPDATE_CMD=""
 IS_RHEL_DERIVATIVE=false
 
-# Define Package managers and commands
+# Define Package managers and commands with silent flags built-in
 if command -v apt >/dev/null 2>&1; then
     PKG_MANAGER="apt"
-    INSTALL_CMD="sudo apt install -y"
-    UPDATE_CMD="sudo apt update"
+    if [ "$verbose" = true ]; then
+        INSTALL_CMD="sudo DEBIAN_FRONTEND=noninteractive apt-get install -y"
+        UPDATE_CMD="sudo apt-get update"
+    else
+        INSTALL_CMD="sudo DEBIAN_FRONTEND=noninteractive apt-get -qq -y install"
+        UPDATE_CMD="sudo apt-get -qq update"
+    fi
 elif command -v dnf >/dev/null 2>&1; then
     PKG_MANAGER="dnf"
-    INSTALL_CMD="sudo dnf install -y"
+    if [ "$verbose" = true ]; then
+        INSTALL_CMD="sudo dnf install -y"
+    else
+        INSTALL_CMD="sudo dnf install -y -q"
+    fi
     UPDATE_CMD=""
-    # Check if we are specifically on an Enterprise Linux variant (Rocky, RHEL, AlmaLinux)
     if [ -f /etc/redhat-release ] && ! grep -qi "Fedora" /etc/redhat-release; then
         IS_RHEL_DERIVATIVE=true
     fi
 elif command -v yum >/dev/null 2>&1; then
     PKG_MANAGER="yum"
-    INSTALL_CMD="sudo yum install -y"
+    if [ "$verbose" = true ]; then
+        INSTALL_CMD="sudo yum install -y"
+    else
+        INSTALL_CMD="sudo yum install -y -q"
+    fi
     UPDATE_CMD=""
     if [ -f /etc/redhat-release ] && ! grep -qi "Fedora" /etc/redhat-release; then
         IS_RHEL_DERIVATIVE=true
     fi
 elif command -v pacman >/dev/null 2>&1; then
     PKG_MANAGER="pacman"
-    INSTALL_CMD="sudo pacman -S --noconfirm"
-    UPDATE_CMD="sudo pacman -Sy"
+    if [ "$verbose" = true ]; then
+        INSTALL_CMD="sudo pacman -S --noconfirm"
+        UPDATE_CMD="sudo pacman -Sy"
+    else
+        INSTALL_CMD="sudo pacman -S --noconfirm --quiet"
+        UPDATE_CMD="sudo pacman -Sy --quiet"
+    fi
 fi
 
 # Check for sudo privileges, if not, ask for authentication
@@ -74,20 +105,20 @@ if [ -n "$PKG_MANAGER" ]; then
     echo "Checking system-level dependencies for OpenVINO GPU acceleration..."
 
     if [ -n "$UPDATE_CMD" ]; then
-        $UPDATE_CMD
+        $UPDATE_CMD >&$TOOL_OUT 2>&$TOOL_ERR
     fi
 
     # Install opencl library
     echo "Installing opencl library..."
     case $PKG_MANAGER in
         apt)
-            $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd
+            $INSTALL_CMD ocl-icd-libopencl1 intel-opencl-icd >&$TOOL_OUT 2>&$TOOL_ERR
             ;;
         dnf|yum)
-            $INSTALL_CMD ocl-icd intel-opencl
+            $INSTALL_CMD ocl-icd intel-opencl >&$TOOL_OUT 2>&$TOOL_ERR
             ;;
         pacman)
-            $INSTALL_CMD ocl-icd intel-compute-runtime
+            $INSTALL_CMD ocl-icd intel-compute-runtime >&$TOOL_OUT 2>&$TOOL_ERR
             ;;
     esac
 
@@ -144,9 +175,9 @@ done
 if [ "$HAS_MODERN_PYTHON" = false ]; then
     echo "Installing modern python3.14..."
     case $PKG_MANAGER in
-        apt)     $INSTALL_CMD "python3.14" ;;
-        dnf|yum) $INSTALL_CMD "python3.14" ;;
-        pacman)  $INSTALL_CMD "python" ;;
+        apt)     $INSTALL_CMD "python3.14" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+        dnf|yum) $INSTALL_CMD "python3.14" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+        pacman)  $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
     esac
 fi
 
@@ -166,7 +197,7 @@ if [ -z "$PYTHON_BIN" ]; then
 fi
 
 # Look for venv module using our modern binary engine. If it is missing, install it
-if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
+if ! "$PYTHON_BIN" -m venv ovi-env >/dev/null 2>&1; then
     echo "Python venv module missing for selected engine."
 
     # Detect the minor version of our execution target
@@ -175,9 +206,9 @@ if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
     if [ -n "$PKG_MANAGER" ]; then
         echo "Installing matching python venv package via $PKG_MANAGER..."
         case $PKG_MANAGER in
-            apt)     $INSTALL_CMD "python${PY_VER}-venv" ;;
-            dnf|yum) $INSTALL_CMD "python${PY_VER}" ;;
-            pacman)  $INSTALL_CMD "python" ;;
+            apt)     $INSTALL_CMD "python${PY_VER}-venv" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+            dnf|yum) $INSTALL_CMD "python${PY_VER}" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+            pacman)  $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
         esac
     else
         echo "Error: Unknown package manager. Cannot automatically install python venv."
@@ -185,7 +216,7 @@ if ! "$PYTHON_BIN" -m venv ovi-env 2>/dev/null; then
     fi
 
     # Final retry to create the environment
-    "$PYTHON_BIN" -m venv ovi-env
+    "$PYTHON_BIN" -m venv ovi-env >/dev/null 2>&1
 fi
 
 # Activate the environment
@@ -193,10 +224,13 @@ source ovi-env/bin/activate
 
 # Upgrade pip inside the venv
 echo "Upgrading virtual environment package tools (pip)..."
-python3 -m pip install --upgrade pip setuptools wheel
-
-# Install dependencies
-pip install -r requirements.txt
+if [ "$verbose" = true ]; then
+    python3 -m pip install --upgrade pip setuptools wheel
+    pip install -r requirements.txt
+else
+    python3 -m pip install -q --upgrade pip setuptools wheel >/dev/null 2>&1
+    pip install -q -r requirements.txt >/dev/null 2>&1
+fi
 
 echo "Installing global command(ovi)"
 if [ "$force" = false ]; then
