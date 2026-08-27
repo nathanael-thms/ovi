@@ -20,6 +20,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [ -f /etc/alpine-release ] || [ -d /etc/apk ] || grep -qi "alpine" /etc/os-release 2>/dev/null; then
+    echo "================================================================="
+    echo "ERROR: Alpine Linux is not supported by this installer."
+    echo "--> OpenVINO requires a glibc-based environment (e.g. openSUSE, Ubuntu)."
+    echo "================================================================="
+    exit 1
+fi
+
+
 # Setup background tool redirection based on verbose flag
 if [ "$verbose" = true ]; then
     exec {TOOL_OUT}>&1
@@ -80,10 +89,19 @@ elif command -v pacman >/dev/null 2>&1; then
         INSTALL_CMD="sudo pacman -S --noconfirm --quiet"
         UPDATE_CMD="sudo pacman -Sy --quiet"
     fi
+elif command -v zypper >/dev/null 2>&1; then
+    PKG_MANAGER="zypper"
+    if [ "$verbose" = true ]; then
+        INSTALL_CMD="sudo zypper --non-interactive install -y"
+        UPDATE_CMD="sudo zypper refresh"
+    else
+        INSTALL_CMD="sudo zypper --quiet --non-interactive install -y"
+        UPDATE_CMD="sudo zypper --quiet refresh"
+    fi
 fi
 
 # Check for sudo privileges, if not, ask for authentication
-if [ "$EUID" -ne 0 ]; then
+if [ "$EUID" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
     echo "Sudo access required. Please enter password:"
     if ! sudo -v; then
         echo "Error: Authentication failed. Aborting installation."
@@ -120,6 +138,9 @@ if [ -n "$PKG_MANAGER" ]; then
         pacman)
             $INSTALL_CMD ocl-icd intel-compute-runtime >&$TOOL_OUT 2>&$TOOL_ERR
             ;;
+        zypper)
+            $INSTALL_CMD intel-opencl libOpenCL1 >&$TOOL_OUT 2>&$TOOL_ERR
+            ;;
     esac
 
     # Fix hardware device nodes permissions if they are passed into the environment
@@ -129,27 +150,52 @@ if [ -n "$PKG_MANAGER" ]; then
         # Explicitly force correct group ownership on primary card devices (e.g., card0, card1)
         for card in /dev/dri/card*; do
             if [ -e "$card" ]; then
-                sudo chown root:video "$card"
-                sudo chmod 660 "$card"
+                if command -v sudo >/dev/null 2>&1; then
+                    sudo chown root:video "$card"
+                    sudo chmod 660 "$card"
+                else
+                    chown root:video "$card"
+                    chmod 660 "$card"
+                fi
             fi
         done
 
         # Explicitly force correct group ownership on the compute render block
+        SUDO_PREFIX="sudo"
+        if ! command -v sudo >/dev/null 2>&1; then SUDO_PREFIX=""; fi
+
         if getent group render >/dev/null 2>&1; then
-            sudo chown root:render /dev/dri/renderD128
+            $SUDO_PREFIX chown root:render /dev/dri/renderD128
         else
-            sudo chown root:video /dev/dri/renderD128
+            $SUDO_PREFIX chown root:video /dev/dri/renderD128
         fi
-        sudo chmod 660 /dev/dri/renderD128
+        $SUDO_PREFIX chmod 660 /dev/dri/renderD128
         echo "Hardware node permission overrides applied successfully."
 
-        if [ "$REAL_USER" != "root" ]; then
+        # Fallback path search for distributions like openSUSE
+        USERMOD_BIN="usermod"
+        if ! command -v usermod >/dev/null 2>&1 && [ -x /usr/sbin/usermod ]; then
+            USERMOD_BIN="/usr/sbin/usermod"
+        fi
+
+        if [ "$USERMOD_BIN" != "usermod" ] || command -v usermod >/dev/null 2>&1; then
             echo "Ensuring user '$REAL_USER' has access to hardware groups..."
             for grp in video render; do
                 if getent group "$grp" >/dev/null 2>&1; then
                     if ! groups "$REAL_USER" | grep -q "\b$grp\b"; then
                         echo "Adding $REAL_USER to $grp group..."
-                        sudo usermod -aG "$grp" "$REAL_USER"
+                        $SUDO_PREFIX $USERMOD_BIN -aG "$grp" "$REAL_USER"
+                        echo "--> Note: $REAL_USER may need to log out and back in for GPU group changes to apply."
+                    fi
+                fi
+            done
+        elif [ "$REAL_USER" != "root" ] && command -v addgroup >/dev/null 2>&1; then
+             echo "Ensuring user '$REAL_USER' has access to hardware groups..."
+             for grp in video render; do
+                if getent group "$grp" >/dev/null 2>&1; then
+                    if ! groups "$REAL_USER" | grep -q "\b$grp\b"; then
+                        echo "Adding $REAL_USER to $grp group..."
+                        $SUDO_PREFIX addgroup "$REAL_USER" "$grp"
                         echo "--> Note: $REAL_USER may need to log out and back in for GPU group changes to apply."
                     fi
                 fi
@@ -179,6 +225,30 @@ if [ "$HAS_MODERN_PYTHON" = false ]; then
         dnf|yum) $INSTALL_CMD "python3.14" >&$TOOL_OUT 2>&$TOOL_ERR ;;
         pacman)  $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
     esac
+fi
+
+# For Zypper
+if [ "$PKG_MANAGER" = "zypper" ]; then
+     if command -v "python3" >/dev/null 2>&1; then
+        PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        PYTHON_VERSION_FOR_ZYPPER=$(python3 -c "import sys; print(f'{sys.version_info.major}{sys.version_info.minor}')")
+        if [[ ! "$PYTHON_VERSION" =~ ^3\.(11|12|13|14)$ ]]; then
+            $INSTALL_CMD "python314" "python3" "python314-pip" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR
+            echo "You may need to run ovi via python3.14 command rather than simply typing ovi, see docs for details"
+        else
+            $INSTALL_CMD "python${PYTHON_VERSION_FOR_ZYPPER}-pip" "python${PYTHON_VERSION_FOR_ZYPPER}-curses" >&$TOOL_OUT 2>&$TOOL_ERR
+        fi
+    else
+      $INSTALL_CMD "python3" >&$TOOL_OUT 2>&$TOOL_ERR
+      PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        PYTHON_VERSION_FOR_ZYPPER=$(python3 -c "import sys; print(f'{sys.version_info.major}{sys.version_info.minor}')")
+        if [[ ! "$PYTHON_VERSION" =~ ^3\.(11|12|13|14)$ ]]; then
+            $INSTALL_CMD "python314" "python3" "python314-pip" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR
+            echo "You may need to run ovi via python3.14 command rather than simply typing ovi, see docs for details"
+        else
+            $INSTALL_CMD "python${PYTHON_VERSION_FOR_ZYPPER}-pip" "python${PYTHON_VERSION_FOR_ZYPPER}-curses" >&$TOOL_OUT 2>&$TOOL_ERR
+        fi
+    fi
 fi
 
 # Track down the best available modern execution binary path
