@@ -28,7 +28,6 @@ if [ -f /etc/alpine-release ] || [ -d /etc/apk ] || grep -qi "alpine" /etc/os-re
     exit 1
 fi
 
-
 # Setup background tool redirection based on verbose flag
 if [ "$verbose" = true ]; then
     exec {TOOL_OUT}>&1
@@ -219,31 +218,29 @@ done
 
 # Only force-install a modern package if the system is completely lacking one
 if [ "$HAS_MODERN_PYTHON" = false ]; then
-    echo "Installing modern python3.14..."
+    echo "Installing modern Python..."
     case $PKG_MANAGER in
-        apt)     $INSTALL_CMD "python3.14" >&$TOOL_OUT 2>&$TOOL_ERR ;;
         dnf|yum) $INSTALL_CMD "python3.14" >&$TOOL_OUT 2>&$TOOL_ERR ;;
         pacman)  $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+        zypper)  $INSTALL_CMD "python314" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+        apt)
+            $INSTALL_CMD curl >&$TOOL_OUT 2>&$TOOL_ERR
+
+            curl -LsSf https://astral.sh/uv/install.sh | sh >&$TOOL_OUT 2>&$TOOL_ERR
+            export PATH="$HOME/.local/bin:$PATH"
+
+            uv python install 3.14 >&$TOOL_OUT 2>&$TOOL_ERR
+            ;;
     esac
 fi
 
-# For Zypper
-if [ "$PKG_MANAGER" = "zypper" ]; then
-     if command -v "python3" >/dev/null 2>&1; then
+# Verification stage for systems that already have python3 but lack split bindings
+if [ "$PKG_MANAGER" = "zypper" ] && [ "$HAS_MODERN_PYTHON" = true ]; then
+    if command -v "python3" >/dev/null 2>&1; then
         PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
         PYTHON_VERSION_FOR_ZYPPER=$(python3 -c "import sys; print(f'{sys.version_info.major}{sys.version_info.minor}')")
         if [[ ! "$PYTHON_VERSION" =~ ^3\.(11|12|13|14)$ ]]; then
-            $INSTALL_CMD "python314" "python3" "python314-pip" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR
-            echo "You may need to run ovi via python3.14 command rather than simply typing ovi, see docs for details"
-        else
-            $INSTALL_CMD "python${PYTHON_VERSION_FOR_ZYPPER}-pip" "python${PYTHON_VERSION_FOR_ZYPPER}-curses" >&$TOOL_OUT 2>&$TOOL_ERR
-        fi
-    else
-      $INSTALL_CMD "python3" >&$TOOL_OUT 2>&$TOOL_ERR
-      PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-        PYTHON_VERSION_FOR_ZYPPER=$(python3 -c "import sys; print(f'{sys.version_info.major}{sys.version_info.minor}')")
-        if [[ ! "$PYTHON_VERSION" =~ ^3\.(11|12|13|14)$ ]]; then
-            $INSTALL_CMD "python314" "python3" "python314-pip" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR
+            $INSTALL_CMD "python314" "python314-curses" >&$TOOL_OUT 2>&$TOOL_ERR
             echo "You may need to run ovi via python3.14 command rather than simply typing ovi, see docs for details"
         else
             $INSTALL_CMD "python${PYTHON_VERSION_FOR_ZYPPER}-pip" "python${PYTHON_VERSION_FOR_ZYPPER}-curses" >&$TOOL_OUT 2>&$TOOL_ERR
@@ -272,13 +269,15 @@ if ! "$PYTHON_BIN" -m venv ovi-env >/dev/null 2>&1; then
 
     # Detect the minor version of our execution target
     PY_VER="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    PY_SHORT="$($PYTHON_BIN -c 'import sys; print(f"{sys.version_info.major}{sys.version_info.minor}")')"
 
     if [ -n "$PKG_MANAGER" ]; then
         echo "Installing matching python venv package via $PKG_MANAGER..."
         case $PKG_MANAGER in
             apt)     $INSTALL_CMD "python${PY_VER}-venv" >&$TOOL_OUT 2>&$TOOL_ERR ;;
             dnf|yum) $INSTALL_CMD "python${PY_VER}" >&$TOOL_OUT 2>&$TOOL_ERR ;;
-            pacman)  $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+            pacman) $INSTALL_CMD "python" >&$TOOL_OUT 2>&$TOOL_ERR ;;
+            zypper) $INSTALL_CMD "python${PY_SHORT}" >&$TOOL_OUT 2>&$TOOL_ERR ;;
         esac
     else
         echo "Error: Unknown package manager. Cannot automatically install python venv."
