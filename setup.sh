@@ -263,6 +263,15 @@ if [ -z "$PYTHON_BIN" ]; then
     exit 1
 fi
 
+echo "Modifying ovi shebang line to target: ${PYTHON_BIN}"
+if [ -f "$SCRIPT_DIR/ovi" ]; then
+    # Replaces the first line (1s) matching #! with the new path
+    sed -i "1s|^#!.*|#!${PYTHON_BIN}|" "$SCRIPT_DIR/ovi"
+else
+    echo "Error: Target file '$SCRIPT_DIR/ovi' not found to modify shebang."
+    exit 1
+fi
+
 # Look for venv module using our modern binary engine. If it is missing, install it
 if ! "$PYTHON_BIN" -m venv ovi-env >/dev/null 2>&1; then
     echo "Python venv module missing for selected engine."
@@ -295,6 +304,7 @@ source ovi-env/bin/activate
 echo "Upgrading virtual environment package tools (pip)..."
 if [ "$verbose" = true ]; then
     python3 -m pip install --upgrade pip setuptools wheel
+    echo "Installing pip dependencies"
     pip install -r requirements.txt
 else
     python3 -m pip install -q --upgrade pip setuptools wheel >/dev/null 2>&1
