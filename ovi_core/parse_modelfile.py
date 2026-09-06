@@ -107,9 +107,15 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                 if not line.startswith("PARAMETER "):
                     continue
 
-                _, key, raw_value = line.split(" ", 2)
+                parts = line.split(None, 2)
+                if len(parts) < 3:
+                    continue
+
+                _, key, raw_value = parts
                 key = key.strip()
-                raw_value = raw_value.strip()
+
+                # Strip comments + quotes
+                raw_value = raw_value.split("#", 1)[0].strip().strip('"').strip("'")
 
                 # Apply alias if present
                 if key in aliases:
@@ -125,12 +131,18 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                     if cast_type is bool:
                         value = raw_value.lower() in ("1", "true", "yes", "on")
                     elif key == "stop_token_ids":
-                        value = [int(x.strip()) for x in raw_value.split(",")]
+                        value = [
+                            int(x) for x in raw_value.split(",")
+                            if x.strip().isdigit()
+                        ]
                     else:
                         value = cast_type(raw_value)
                 except ValueError:
                     continue
 
-                parameters[key] = value
+                if key == "stop_token_ids" and key in parameters:
+                    parameters[key].extend(value)
+                else:
+                    parameters[key] = value
 
     return parameters
