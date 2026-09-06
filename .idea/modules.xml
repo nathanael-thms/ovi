@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../ovi-docs/.idea/ovi-docs.iml" filepath="$PROJECT_DIR$/../ovi-docs/.idea/ovi-docs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ovi.iml" filepath="$PROJECT_DIR$/.idea/ovi.iml" />
     </modules>
   </component>
 </project>

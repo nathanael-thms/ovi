@@ -114,10 +114,12 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                 _, key, raw_value = parts
                 key = key.strip()
 
-                # Strip comments + quotes
-                raw_value = raw_value.split("#", 1)[0].strip().strip('"').strip("'")
+                # Strip comments ONLY when they appear as " #"
+                if " #" in raw_value:
+                    raw_value = raw_value.split(" #", 1)[0]
 
-                # Apply alias if present
+                raw_value = raw_value.strip().strip('"').strip("'")
+
                 if key in aliases:
                     key = aliases[key]
 
