@@ -27,18 +27,22 @@ def get_device_from_modelfile(model_name: str) -> str:
 
     modelfile_path = get_model_file_path(model_name)
 
-    # Set a default value first!
+    # Default device
     device = "CPU"
 
     try:
         with open(modelfile_path, 'r') as f:
             for line in f:
-                if line.startswith("DEVICE="):
-                    device = line.split("=", 1)[1].strip()
+                if line.startswith("DEVICE "):
+                    parts = line.split(None, 1)
+                    if len(parts) == 2:
+                        candidate = parts[1].strip().strip('"').strip("'")
+                        # Validate the candidate device
+                        if candidate in ("CPU", "GPU", "NPU", "AUTO"):
+                            device = candidate
     except FileNotFoundError:
         print(f"Warning: Modelfile not found for model '{model_name}'. Defaulting to CPU.")
 
-    # This is now safe because 'device' is guaranteed to exist!
     return device
 
 def get_parameters_from_modelfile(model_name: str) -> dict:
@@ -86,7 +90,12 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
         "length": "length_penalty",
         "ignore_end_of_sequence": "ignore_eos",
         "echo_prompt": "echo",
-        "log_probabilities": "logprobs"
+        "log_probabilities": "logprobs",
+        "temp": "temperature",
+        "presence": "presence_penalty",
+        "frequency": "frequency_penalty",
+        "beam_size": "num_beams",
+        "stop_string": "stop_strings"
     }
 
     modelfile_path = get_model_file_path(model_name)
