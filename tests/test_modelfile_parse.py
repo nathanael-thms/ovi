@@ -1,6 +1,4 @@
-import os
 import textwrap
-import pytest
 
 from ovi_core import parse_modelfile
 
@@ -67,19 +65,19 @@ def test_get_parameters_from_modelfile_parses_values_and_aliases_and_lists(tmp_p
     params = parse_modelfile.get_parameters_from_modelfile("unused")
 
     # numeric and alias parsing
-    assert params.get("max_new_tokens") == 128
-    assert pytest.approx(params.get("temperature")) == 0.5
-    assert pytest.approx(params.get("top_p")) == 0.9
+    assert params["max_new_tokens"] == 128
+    assert params["temperature"] == 0.5
+    assert params["top_p"] == 0.9
 
     # booleans
-    assert params.get("ignore_eos") is True
-    assert params.get("echo") is True
+    assert params["ignore_eos"] is True
+    assert params["echo"] is True
 
-    # stop token ids should combine and be ints
-    assert params.get("stop_token_ids") == [1, 2, 3]
+    # stop token ids should combine and be ints → NOW A SET
+    assert params["stop_token_ids"] == {1, 2, 3}
 
     # stop strings alias
-    assert params.get("stop_strings") == "###"
+    assert params["stop_strings"] == "###"
 
     # invalid/unknown entries were ignored
     assert params.get("not_a_param") is None
@@ -147,14 +145,22 @@ def test_get_parameters_from_modelfile_alias_override_stress(tmp_path, monkeypat
     monkeypatch.setattr(parse_modelfile, "get_model_file_path", lambda model_name: str(mf))
     params = parse_modelfile.get_parameters_from_modelfile("unused")
 
+    # alias override final value
     assert params["temperature"] == 0.4
+
     assert params["top_k"] == 30
     assert params["top_p"] == 0.6
+
+    # num_beams legality → final override is 4
     assert params["num_beams"] == 4
+
     assert params["presence_penalty"] == 0.02
     assert params["frequency_penalty"] == 0.22
     assert params["stop_strings"] == "HALT"
-    assert params["stop_token_ids"] == [5, 6, 7, 8, 9, 10]
+
+    # stop_token_ids → NOW A SET
+    assert params["stop_token_ids"] == {5, 6, 7, 8, 9, 10}
+
     assert params["ignore_eos"] is True
     assert params["echo"] is True
     assert params["max_length"] == 4096

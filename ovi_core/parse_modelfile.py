@@ -71,7 +71,7 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
         "echo": bool,
         "logprobs": int,
         "stop_strings": str,
-        "stop_token_ids": str
+        "stop_token_ids": set
     }
 
     aliases = {
@@ -118,8 +118,10 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                 if " #" in raw_value:
                     raw_value = raw_value.split(" #", 1)[0]
 
+                # Strip surrounding quotes
                 raw_value = raw_value.strip().strip('"').strip("'")
 
+                # Apply alias
                 if key in aliases:
                     key = aliases[key]
 
@@ -142,9 +144,22 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                 except ValueError:
                     continue
 
+                # Store or merge values
                 if key == "stop_token_ids" and key in parameters:
                     parameters[key].extend(value)
                 else:
                     parameters[key] = value
 
-    return parameters
+        # Convert list-type token fields into sets
+        if "stop_token_ids" in parameters and isinstance(parameters["stop_token_ids"], list):
+            parameters["stop_token_ids"] = set(parameters["stop_token_ids"])
+
+        # Validate num_beams legality
+        if "num_beams" in parameters:
+            nb = parameters["num_beams"]
+            if not isinstance(nb, int) or nb <= 0:
+                parameters["num_beams"] = 1
+            elif nb > 16:
+                parameters["num_beams"] = 16
+
+        return parameters
