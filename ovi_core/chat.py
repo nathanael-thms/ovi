@@ -69,9 +69,8 @@ def _record_history_entry(entry: str) -> None:
 
 
 def start_chat_loop(model_name: str):
-    # Start a chat loop with the specified model and device
-    device = get_device_from_modelfile(model_name)
-    pipe = OviEngine.get_pipeline(model_name, device)
+    # Start a chat loop with the specified model
+    pipe = OviEngine.get_pipeline(model_name)
 
     pipe.start_chat()
     _configure_readline()

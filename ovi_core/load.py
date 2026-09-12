@@ -18,6 +18,8 @@ import sys
 import openvino_genai as ov_genai
 
 from ovi_core.path import get_model_path
+from ovi_core.parse_modelfile import get_device_from_modelfile
+from ovi_core.parse_modelfile import get_parameters_from_modelfile
 
 
 class OviEngine:
@@ -27,10 +29,25 @@ class OviEngine:
     _pipeline_instance = None
     
     @classmethod
-    def get_pipeline(cls, model_name: str, device: str = "CPU"):
+    def get_pipeline(cls, model_name: str, device: str | None = None):
         """
         Retrieves the raw OpenVINO model pipeline from memory and compiles the IR graph.
         """
+
+        if device is None:
+            device = get_device_from_modelfile(model_name)
+        else:
+            device = str(device).upper()
+            if device not in {"CPU", "GPU", "NPU", "AUTO"}:
+                device = get_device_from_modelfile(model_name)
+
+        parameters = get_parameters_from_modelfile(model_name)
+        # Convert list-type token fields into sets for OpenVINO
+        list_to_set_keys = {"stop_token_ids"}
+
+        for key in list_to_set_keys:
+            if key in parameters and isinstance(parameters[key], list):
+                parameters[key] = set(parameters[key])
 
         # Get the model directory path based on the model name
         model_dir = get_model_path(model_name)
@@ -47,6 +64,9 @@ class OviEngine:
         # Load the model into memory and compile the IR graph for the specified device
         try:
             cls._pipeline_instance = ov_genai.LLMPipeline(model_dir, device)
+            if hasattr(ov_genai, "GenerationConfig") and hasattr(cls._pipeline_instance, "set_generation_config"):
+                config = ov_genai.GenerationConfig(**parameters)
+                cls._pipeline_instance.set_generation_config(config)
             return cls._pipeline_instance
 
         except Exception as e:

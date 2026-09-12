@@ -15,6 +15,7 @@
 # ovi_core/parse_modelfile.py
 
 import os
+import sys
 
 from ovi_core.path import get_model_file_path
 
@@ -154,12 +155,82 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
         if "stop_token_ids" in parameters and isinstance(parameters["stop_token_ids"], list):
             parameters["stop_token_ids"] = set(parameters["stop_token_ids"])
 
-        # Validate num_beams legality
-        if "num_beams" in parameters:
-            nb = parameters["num_beams"]
-            if not isinstance(nb, int) or nb <= 0:
-                parameters["num_beams"] = 1
-            elif nb > 16:
-                parameters["num_beams"] = 16
+        # Generation parameter legality validator
+        def fail(msg: str):
+            print(f"Error: {msg}")
+            sys.exit(1)
+
+        # num_beams sanity
+        nb = parameters.get("num_beams", 1)
+        if not isinstance(nb, int) or nb <= 0:
+            fail("Invalid num_beams in Modelfile: expected a positive integer.")
+        if nb > 16:
+            fail("Invalid num_beams in Modelfile: maximum value is 16.")
+        parameters["num_beams"] = nb
+
+        if nb > 1:
+            if "top_k" in parameters and parameters["top_k"] != 0:
+                fail("Invalid Modelfile config: beam search requires top_k=0.")
+            if "top_p" in parameters and parameters["top_p"] != 0.0:
+                fail("Invalid Modelfile config: beam search requires top_p=0.0.")
+            if "min_p" in parameters and parameters["min_p"] != 0.0:
+                fail("Invalid Modelfile config: beam search requires min_p=0.0.")
+            if "presence_penalty" in parameters and parameters["presence_penalty"] != 0.0:
+                fail("Invalid Modelfile config: beam search forbids presence_penalty.")
+            if "frequency_penalty" in parameters and parameters["frequency_penalty"] != 0.0:
+                fail("Invalid Modelfile config: beam search forbids frequency_penalty.")
+            if "diversity_penalty" in parameters and parameters["diversity_penalty"] != 0.0:
+                fail("Invalid Modelfile config: beam search forbids diversity_penalty.")
+            if "repetition_penalty" in parameters and parameters["repetition_penalty"] != 1.0:
+                fail("Invalid Modelfile config: beam search requires repetition_penalty=1.0.")
+            if "temperature" in parameters and parameters["temperature"] != 1.0:
+                fail("Invalid Modelfile config: beam search requires temperature=1.0.")
+            if "max_ngram_size" in parameters and parameters["max_ngram_size"] != 0:
+                fail("Invalid Modelfile config: beam search requires max_ngram_size=0.")
+
+        # length_penalty legality
+        lp = parameters.get("length_penalty", 0.0)
+        if not isinstance(lp, (int, float)) or lp < 0:
+            fail("Invalid length_penalty in Modelfile: expected a non-negative number.")
+
+        # logprobs legality
+        lg = parameters.get("logprobs", 0)
+        if not isinstance(lg, int) or lg < 0 or lg > 10:
+            fail("Invalid logprobs in Modelfile: expected an integer between 0 and 10.")
+
+        # max_length / min_new_tokens legality
+        max_len = parameters.get("max_length", None)
+        min_new = parameters.get("min_new_tokens", 0)
+
+        if isinstance(max_len, int) and isinstance(min_new, int):
+            if max_len < min_new:
+                fail("Invalid Modelfile config: max_length cannot be less than min_new_tokens.")
+
+        # max_new_tokens ≤ max_length
+        mnt = parameters.get("max_new_tokens", None)
+        if isinstance(max_len, int) and isinstance(mnt, int):
+            if mnt > max_len:
+                fail("Invalid Modelfile config: max_new_tokens cannot exceed max_length.")
+
+        # stop_token_ids legality
+        if "stop_token_ids" in parameters:
+            ids = parameters["stop_token_ids"]
+            if not isinstance(ids, (list, set)):
+                fail("Invalid stop_token_ids in Modelfile: expected a list or set of non-negative integers.")
+            normalized = {x for x in ids if isinstance(x, int) and x >= 0}
+            if len(normalized) != len(ids):
+                fail("Invalid stop_token_ids in Modelfile: all values must be non-negative integers.")
+            parameters["stop_token_ids"] = normalized
+
+        # stop_strings legality
+        if "stop_strings" in parameters:
+            if not isinstance(parameters["stop_strings"], str):
+                fail("Invalid stop_strings in Modelfile: expected a string.")
+
+        # Streaming compatibility
+        if parameters.get("stream", False) and parameters.get("num_beams", 1) > 1:
+            fail("Invalid Modelfile config: streaming cannot be combined with num_beams > 1.")
 
         return parameters
+
+    return parameters
