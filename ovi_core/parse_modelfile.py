@@ -227,10 +227,6 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
             if not isinstance(parameters["stop_strings"], str):
                 fail("Invalid stop_strings in Modelfile: expected a string.")
 
-        # Streaming compatibility
-        if parameters.get("stream", False) and parameters.get("num_beams", 1) > 1:
-            fail("Invalid Modelfile config: streaming cannot be combined with num_beams > 1.")
-
         return parameters
 
     return parameters
