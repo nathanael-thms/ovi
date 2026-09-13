@@ -34,6 +34,25 @@ def test_get_device_from_modelfile_defaults_to_cpu_on_missing_or_invalid(tmp_pat
     assert parse_modelfile.get_device_from_modelfile("m") == "CPU"
 
 
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("SYSTEM \"\"\n", ""),
+        ("SYSTEM ''\n", ""),
+        ('SYSTEM """hello from triple quotes"""\n', "hello from triple quotes"),
+        ("SYSTEM <<EOF\nhello from heredoc\nEOF\n", "hello from heredoc"),
+    ],
+)
+def test_get_system_prompt_from_modelfile_supports_prompt_syntax_variants(
+    tmp_path, monkeypatch, content, expected
+):
+    mf = tmp_path / "Modelfile"
+    write_modelfile(mf, content)
+    monkeypatch.setattr(parse_modelfile, "get_model_file_path", lambda model_name: str(mf))
+
+    assert parse_modelfile.get_system_prompt_from_modelfile("unused") == expected
+
+
 def test_get_parameters_from_modelfile_parses_values_and_aliases_and_lists(tmp_path, monkeypatch):
     mf = tmp_path / "Modelfile"
     write_modelfile(mf, '''
