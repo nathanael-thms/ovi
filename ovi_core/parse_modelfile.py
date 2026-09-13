@@ -46,6 +46,28 @@ def get_device_from_modelfile(model_name: str) -> str:
 
     return device
 
+def get_system_prompt_from_modelfile(model_name: str) -> str:
+    """
+    Reads the Modelfile for the specified model and extracts the system prompt.
+    Returns the system prompt as a string. If not found, returns an empty string.
+    """
+
+    modelfile_path = get_model_file_path(model_name)
+    system_prompt = ""
+
+    try:
+        with open(modelfile_path, 'r') as f:
+            for line in f:
+                if line.startswith("SYSTEM "):
+                    parts = line.split(None, 1)
+                    if len(parts) == 2:
+                        system_prompt = parts[1].strip().strip('"').strip("'")
+                        break
+    except FileNotFoundError:
+        print(f"Warning: Modelfile not found for model '{model_name}'. No system prompt will be used.")
+
+    return system_prompt
+
 def get_parameters_from_modelfile(model_name: str) -> dict:
     """
     Reads the Modelfile for the specified model and extracts valid OpenVINO GenAI
@@ -230,3 +252,5 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
         return parameters
 
     return parameters
+
+print(get_system_prompt_from_modelfile("qwen2.5-coder-int4-instruct-1.5B"))
