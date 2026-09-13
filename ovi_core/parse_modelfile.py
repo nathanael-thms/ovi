@@ -301,5 +301,3 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
         return parameters
 
     return parameters
-
-print(get_system_prompt_from_modelfile("qwen2.5-coder-int4-instruct-1.5B"))
