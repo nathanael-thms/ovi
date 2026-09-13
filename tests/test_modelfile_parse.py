@@ -13,7 +13,7 @@ def write_modelfile(path, content: str):
 def test_get_device_from_modelfile_returns_specified_device(tmp_path, monkeypatch):
     mf = tmp_path / "Modelfile"
     write_modelfile(mf, '''
-    DEVICE GPU
+    DEVICE GPU # Test comment
     ''')
 
     monkeypatch.setattr(parse_modelfile, "get_model_file_path", lambda model_name: str(mf))
@@ -40,6 +40,7 @@ def test_get_device_from_modelfile_defaults_to_cpu_on_missing_or_invalid(tmp_pat
         ("SYSTEM \"\"\n", ""),
         ("SYSTEM ''\n", ""),
         ('SYSTEM """hello from triple quotes"""\n', "hello from triple quotes"),
+        ('SYSTEM """hello from triple quotes""" # test\n', "hello from triple quotes"),
         ("SYSTEM <<EOF\nhello from heredoc\nEOF\n", "hello from heredoc"),
     ],
 )

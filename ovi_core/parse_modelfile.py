@@ -37,7 +37,13 @@ def get_device_from_modelfile(model_name: str) -> str:
                 if line.startswith("DEVICE "):
                     parts = line.split(None, 1)
                     if len(parts) == 2:
-                        candidate = parts[1].strip().strip('"').strip("'")
+                        raw_value = parts[1]
+
+                        # Strip comments ONLY when they appear as " #"
+                        if " #" in raw_value:
+                            raw_value = raw_value.split(" #", 1)[0]
+
+                        candidate = raw_value.strip().strip('"').strip("'")
                         # Validate the candidate device
                         if candidate in ("CPU", "GPU", "NPU", "AUTO"):
                             device = candidate
@@ -72,6 +78,9 @@ def get_system_prompt_from_modelfile(model_name: str) -> str:
 
                             # Handle <<EOF Heredoc syntax
                             if content.startswith("<<"):
+                                # Strip potential trailing comments from the opening tag line (e.g., SYSTEM <<EOF # comment)
+                                if " #" in content:
+                                    content = content.split(" #", 1)[0].strip()
                                 end_marker = content[2:].strip()
                                 in_system_block = True
                                 continue
@@ -86,18 +95,31 @@ def get_system_prompt_from_modelfile(model_name: str) -> str:
                                 if content_clean.endswith(end_marker):
                                     system_prompt_lines.append(content_clean[:-3])
                                     break
+                                # If it closes and has a trailing comment on the same line (e.g., SYSTEM """text""" # comment)
+                                elif end_marker in content_clean and " #" in content_clean:
+                                    actual_content = content_clean.split(end_marker, 1)[0]
+                                    system_prompt_lines.append(actual_content)
+                                    break
                                 else:
                                     system_prompt_lines.append(content_clean + "\n")
 
                             # Handle standard single-line prompt
                             else:
+                                # Strip trailing comments from single-line configs
+                                if " #" in content:
+                                    content = content.split(" #", 1)[0].strip()
                                 return content.strip('"').strip("'")
 
                 # Case 2: Reading inside a multi-line block
                 else:
                     # Check for Heredoc closing tag (e.g., exact match on "EOF")
                     if end_marker and not end_marker.startswith(('"""', "'''")):
-                        if line.strip() == end_marker:
+                        # Split off comments on the closing line if present (e.g., EOF # comment)
+                        check_line = line.strip()
+                        if " #" in check_line:
+                            check_line = check_line.split(" #", 1)[0].strip()
+
+                        if check_line == end_marker:
                             break
                         system_prompt_lines.append(line)
 
