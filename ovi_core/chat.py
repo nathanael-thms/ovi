@@ -2,6 +2,7 @@
 
 import atexit
 import os
+import openvino_genai as ov_genai
 
 from ovi_core.load import OviEngine
 from ovi_core.parse_modelfile import get_device_from_modelfile
@@ -69,10 +70,17 @@ def _record_history_entry(entry: str) -> None:
 
 
 def start_chat_loop(model_name: str):
-    # Start a chat loop with the specified model
-    pipe = OviEngine.get_pipeline(model_name)
+    engine_data = OviEngine.get_pipeline(model_name)
 
-    pipe.start_chat()
+    # Safely unpack the native components out of the container
+    pipe = engine_data["pipeline"]
+    system_prompt = engine_data.get("system_prompt", "")
+
+    # Initialize the native OpenVINO ChatHistory container
+    history = ov_genai.ChatHistory()
+    if system_prompt:
+        history.append({"role": "system", "content": system_prompt})
+
     _configure_readline()
     # Display a message and instructions for the user
     print(f"\nConnected to raw model '{model_name}'. Type '/exit' to quit.")
@@ -96,11 +104,12 @@ def start_chat_loop(model_name: str):
                 print("bye")
                 return
 
-            # Core native text streaming block
-            pipe.generate(user_input, streamer=_stream_callback)
+            # Append the user prompt to our session tracking container
+            history.append({"role": "user", "content": user_input})
+
+            # Core native text streaming block using the history payload
+            pipe.generate(history, streamer=_stream_callback)
             print()  # Terminal formatting newline
 
     except KeyboardInterrupt:
         print("\nChat session stopped.")
-    finally:
-        pipe.finish_chat()

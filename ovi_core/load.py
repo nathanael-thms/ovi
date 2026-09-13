@@ -20,6 +20,7 @@ import openvino_genai as ov_genai
 from ovi_core.path import get_model_path
 from ovi_core.parse_modelfile import get_device_from_modelfile
 from ovi_core.parse_modelfile import get_parameters_from_modelfile
+from ovi_core.parse_modelfile import get_system_prompt_from_modelfile
 
 
 class OviEngine:
@@ -49,6 +50,8 @@ class OviEngine:
             if key in parameters and isinstance(parameters[key], list):
                 parameters[key] = set(parameters[key])
 
+        system_prompt = get_system_prompt_from_modelfile(model_name)
+
         # Get the model directory path based on the model name
         model_dir = get_model_path(model_name)
 
@@ -63,10 +66,17 @@ class OviEngine:
 
         # Load the model into memory and compile the IR graph for the specified device
         try:
-            cls._pipeline_instance = ov_genai.LLMPipeline(model_dir, device)
-            if hasattr(ov_genai, "GenerationConfig") and hasattr(cls._pipeline_instance, "set_generation_config"):
+            pipeline = ov_genai.LLMPipeline(model_dir, device)
+            if hasattr(ov_genai, "GenerationConfig") and hasattr(pipeline, "set_generation_config"):
                 config = ov_genai.GenerationConfig(**parameters)
-                cls._pipeline_instance.set_generation_config(config)
+                pipeline.set_generation_config(config)
+
+            # Pack the native object alongside its metadata into a safe Python dictionary
+            cls._pipeline_instance = {
+                "pipeline": pipeline,
+                "system_prompt": system_prompt
+            }
+
             return cls._pipeline_instance
 
         except Exception as e:
