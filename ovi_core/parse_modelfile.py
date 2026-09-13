@@ -46,27 +46,62 @@ def get_device_from_modelfile(model_name: str) -> str:
 
     return device
 
+
 def get_system_prompt_from_modelfile(model_name: str) -> str:
     """
     Reads the Modelfile for the specified model and extracts the system prompt.
+    Supports both single-line prompts and multi-line/EOF block syntax.
     Returns the system prompt as a string. If not found, returns an empty string.
     """
 
     modelfile_path = get_model_file_path(model_name)
-    system_prompt = ""
+    system_prompt_lines = []
+    in_system_block = False
+    quote_char = None
 
     try:
         with open(modelfile_path, 'r') as f:
             for line in f:
-                if line.startswith("SYSTEM "):
-                    parts = line.split(None, 1)
-                    if len(parts) == 2:
-                        system_prompt = parts[1].strip().strip('"').strip("'")
+                # If we are not currently reading a SYSTEM block
+                if not in_system_block:
+                    if line.startswith("SYSTEM "):
+                        parts = line.split(None, 1)
+                        if len(parts) == 2:
+                            content = parts[1].strip()
+
+                            # Check for multi-line triple quotes (""" or ''')
+                            if content.startswith(('"""', "'''")):
+                                quote_char = content[:3]
+                                in_system_block = True
+                                # Strip the opening quotes and keep the rest of the line if any
+                                content_clean = content[3:]
+                                if content_clean.endswith(quote_char):
+                                    # Single line wrapped in triple quotes
+                                    system_prompt_lines.append(content_clean[:-3])
+                                    break
+                                else:
+                                    system_prompt_lines.append(content_clean)
+                            else:
+                                # Standard single-line SYSTEM command
+                                system_prompt = content.strip('"').strip("'")
+                                return system_prompt
+
+                # If we are inside a multi-line SYSTEM block
+                else:
+                    # Look for the closing triple quotes
+                    if quote_char and quote_char in line:
+                        parts = line.split(quote_char, 1)
+                        system_prompt_lines.append(parts[0])
                         break
+                    else:
+                        # Otherwise, keep consuming lines until EOF
+                        system_prompt_lines.append(line)
+
     except FileNotFoundError:
         print(f"Warning: Modelfile not found for model '{model_name}'. No system prompt will be used.")
 
-    return system_prompt
+    # Join the collected lines and clean up trailing whitespaces
+    return "".join(system_prompt_lines).strip()
 
 def get_parameters_from_modelfile(model_name: str) -> dict:
     """
