@@ -50,51 +50,65 @@ def get_device_from_modelfile(model_name: str) -> str:
 def get_system_prompt_from_modelfile(model_name: str) -> str:
     """
     Reads the Modelfile for the specified model and extracts the system prompt.
-    Supports both single-line prompts and multi-line/EOF block syntax.
+    Supports single-line, triple-quotes (), and heredoc( << EOF) multi - line
+    syntax.
     Returns the system prompt as a string. If not found, returns an empty string.
     """
 
     modelfile_path = get_model_file_path(model_name)
     system_prompt_lines = []
     in_system_block = False
-    quote_char = None
+    end_marker = None  # Tracks either triple quotes (""", ''') or a heredoc tag (EOF)
 
     try:
         with open(modelfile_path, 'r') as f:
             for line in f:
-                # If we are not currently reading a SYSTEM block
+                # Case 1: Looking for the start of the SYSTEM command
                 if not in_system_block:
                     if line.startswith("SYSTEM "):
                         parts = line.split(None, 1)
                         if len(parts) == 2:
                             content = parts[1].strip()
 
-                            # Check for multi-line triple quotes (""" or ''')
-                            if content.startswith(('"""', "'''")):
-                                quote_char = content[:3]
+                            # Handle <<EOF Heredoc syntax
+                            if content.startswith("<<"):
+                                end_marker = content[2:].strip()
                                 in_system_block = True
-                                # Strip the opening quotes and keep the rest of the line if any
+                                continue
+
+                            # Handle triple quotes (''' or """)
+                            elif content.startswith(('"""', "'''")):
+                                end_marker = content[:3]
+                                in_system_block = True
                                 content_clean = content[3:]
-                                if content_clean.endswith(quote_char):
-                                    # Single line wrapped in triple quotes
+
+                                # Check if it opens and closes on the exact same line
+                                if content_clean.endswith(end_marker):
                                     system_prompt_lines.append(content_clean[:-3])
                                     break
                                 else:
-                                    system_prompt_lines.append(content_clean)
-                            else:
-                                # Standard single-line SYSTEM command
-                                system_prompt = content.strip('"').strip("'")
-                                return system_prompt
+                                    system_prompt_lines.append(content_clean + "\n")
 
-                # If we are inside a multi-line SYSTEM block
+                            # Handle standard single-line prompt
+                            else:
+                                return content.strip('"').strip("'")
+
+                # Case 2: Reading inside a multi-line block
                 else:
-                    # Look for the closing triple quotes
-                    if quote_char and quote_char in line:
-                        parts = line.split(quote_char, 1)
+                    # Check for Heredoc closing tag (e.g., exact match on "EOF")
+                    if end_marker and not end_marker.startswith(('"""', "'''")):
+                        if line.strip() == end_marker:
+                            break
+                        system_prompt_lines.append(line)
+
+                    # Check for triple quotes closing tag
+                    elif end_marker and end_marker in line:
+                        parts = line.split(end_marker, 1)
                         system_prompt_lines.append(parts[0])
                         break
+
+                    # Safely consume content line by line until EOF if closing marker is missing
                     else:
-                        # Otherwise, keep consuming lines until EOF
                         system_prompt_lines.append(line)
 
     except FileNotFoundError:
