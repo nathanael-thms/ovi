@@ -29,6 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          source ovi-env/bin/activate
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
@@ -38,4 +39,6 @@ jobs:
           fi
 
       - name: Run tests
-        run: pytest -q
+        run: |
+          source ovi-env/bin/activate
+          pytest -q
