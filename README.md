@@ -15,10 +15,9 @@ Documentation is available at [https://ovi.nattho.com](https://ovi.nattho.com).
 
 - **Interactive Chat Shell** — Navigate previous prompts using ↑/↓ for a smooth REPL‑style workflow.
 
-- **Device Selection** — Load models onto CPU, iGPU, dGPU, or other OpenVINO‑supported targets.
+- **Modelfiles** — Define parameters like temperature, top‑p, and other generation parameters for each model, chose an execution device, and set a custom system prompt
 
 ## Upcoming Features
-- **Custom Modelfiles** — Define execution devices, context length, warm‑duration, and other runtime parameters.
 
 - **Internal /x Command Interface** — Inspect and adjust runtime parameters from within the chat shell.
 
