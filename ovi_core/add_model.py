@@ -78,14 +78,11 @@ def add_model() -> None:
 
 def add_model_from_local_directory() -> None:
     """
-    Placeholder function for adding a model from a local directory.
+    Function for adding a model from a local directory.
     This function will be implemented in the future to handle the logic of adding a model from a local directory.
     """
     print("Please enter the path to the local directory containing the model:")
     model_path = input().strip()
-
-    print("Please enter the name you wish to identify the model by:")
-    model_name = input().strip()
 
     # Verify the provided path exists and is a directory + ensure it contains the required OpenVINO IR model files
     if not model_path or not os.path.isdir(model_path):
@@ -94,12 +91,16 @@ def add_model_from_local_directory() -> None:
     else:
         required_xml = os.path.join(model_path, "openvino_model.xml")
         if not os.path.exists(required_xml):
-            print("WARNING: The provided directory does not contain the required OpenVINO IR model files (openvino_model.xml).")
+            print(
+                "WARNING: The provided directory does not contain the required OpenVINO IR model files (openvino_model.xml).")
             print("Would you like to continue adding this model? (y/n):")
             choice = input().strip().lower()
             if choice != 'y':
                 print("Aborting model addition.")
                 sys.exit(1)
+
+    print("Please enter the name you wish to identify the model by:")
+    model_name = input().strip()
 
     new_model_path = os.path.join(get_models_root(), model_name)
     command = f'mkdir -p "{new_model_path}" && cp -RL "{model_path}"/* "{new_model_path}/"'
@@ -110,5 +111,3 @@ def add_model_from_local_directory() -> None:
     except subprocess.CalledProcessError as e:
         print(f"Error: Failed to copy model files. Terminal exited with code {e.returncode}.")
         sys.exit(1)
-
-add_model_from_local_directory()
