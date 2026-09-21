@@ -42,6 +42,7 @@ if script_dir not in sys.path:
 from ovi_core import chat
 from ovi_core.menu import draw_menu
 from ovi_core.path import get_models_root
+from ovi_core.add_model import add_model
 
 models_dir = get_models_root()
 
@@ -120,6 +121,12 @@ def main() -> None:
         help="Check if this is an ovi installation, used by setup.sh for validation"
     )
 
+    # Temporary testing flag
+    parser.add_argument(
+        "--add-model",
+        action="store_true",
+        help="Add a model"
+    )
     subparsers = parser.add_subparsers(dest="command")
     run_parser = subparsers.add_parser("run", help="Run a model")
     run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
@@ -128,6 +135,9 @@ def main() -> None:
     # Handle the main application flow
     if args.is_ovi_install:
         print("True")
+    elif args.add_model:
+        sys.argv = [sys.argv[0]]
+        add_model()
     elif args.command == "run" and args.model_name:
         # Directly launch the chat loop if a model has been specified
         chat.start_chat_loop(model_name=args.model_name)

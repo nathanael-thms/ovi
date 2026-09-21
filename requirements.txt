@@ -3,3 +3,5 @@ openvino==2026.2.1
 openvino-genai==2026.2.1.0
 openvino-telemetry==2025.2.0
 openvino-tokenizers==2026.2.1.0
+huggingface_hub==1.32.0
+prompt_toolkit==3.0.53
