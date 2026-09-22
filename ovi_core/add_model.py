@@ -50,12 +50,13 @@ def method_menu(stdscr: curses.window) -> str:
             current_row = (current_row - 1) % len(options)
         elif key == curses.KEY_DOWN:
             current_row = (current_row + 1) % len(options)
-        elif key in [curses.KEY_ENTER, 10, 13]:
+        elif key in (curses.KEY_ENTER, 10, 13):
             return options[current_row]
-        elif key in [curses.KEY_LEFT]:
+        elif key in (curses.KEY_LEFT, ord("b"), ord("B")):
             return "Back"
-        elif key in [27, ord('q'), ord('Q')]:
-            sys.exit(0)
+        elif key in (27, ord("q"), ord("Q")):
+            raise SystemExit(0)
+
 
 def add_model() -> None:
     """
