@@ -61,3 +61,32 @@ def test_get_pipeline_exits_when_openvino_model_is_missing(monkeypatch, tmp_path
         load_module.OviEngine.get_pipeline("demo-model", device="CPU")
 
     assert excinfo.value.code == 1
+
+
+def test_get_pipeline_validates_device_and_surfaces_compilation_failures(monkeypatch, tmp_path, fake_openvino):
+    load_module = _load_load_module()
+    model_dir = tmp_path / "demo-model"
+    model_dir.mkdir()
+    (model_dir / "openvino_model.xml").write_text("<model/>")
+
+    monkeypatch.setattr(load_module, "get_model_path", lambda model_name: str(model_dir))
+    monkeypatch.setattr(load_module, "get_device_from_modelfile", lambda model_name: "GPU")
+    monkeypatch.setattr(load_module, "get_parameters_from_modelfile", lambda model_name: {"stop_token_ids": [3, 4]})
+    monkeypatch.setattr(load_module, "get_system_prompt_from_modelfile", lambda model_name: "system")
+
+    load_module.OviEngine._pipeline_instance = None
+    result = load_module.OviEngine.get_pipeline("demo-model", device="bad-device")
+    assert result["pipeline"].device == "GPU"
+
+    load_module.OviEngine._pipeline_instance = None
+    result = load_module.OviEngine.get_pipeline("demo-model")
+    assert result["pipeline"].device == "GPU"
+
+    class Exploder:
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(load_module.ov_genai, "LLMPipeline", Exploder)
+    with pytest.raises(SystemExit) as excinfo:
+        load_module.OviEngine.get_pipeline("demo-model", device="CPU")
+    assert excinfo.value.code == 1

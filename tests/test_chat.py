@@ -91,3 +91,87 @@ def test_start_chat_loop_starts_pipeline_and_finishes_cleanly(monkeypatch, fake_
 
     # Match the updated execution metrics exactly
     assert fake_pipeline.events == [("generate", [{"role": "user", "content": "hello"}])]
+
+
+def test_readline_helpers_and_history_flow(monkeypatch):
+    chat_module = _load_chat_module(monkeypatch)
+    calls = []
+
+    class FakeReadline:
+        def read_history_file(self, path):
+            calls.append(("read", path))
+
+        def set_history_length(self, length):
+            calls.append(("length", length))
+
+        def write_history_file(self, path):
+            calls.append(("write", path))
+
+        def add_history(self, entry):
+            calls.append(("add", entry))
+
+        def get_current_history_length(self):
+            return 1
+
+        def get_history_item(self, index):
+            return "hello"
+
+    fake_readline = FakeReadline()
+    monkeypatch.setattr(chat_module, "readline", fake_readline)
+    monkeypatch.setattr(chat_module, "atexit", type("A", (), {"register": lambda self, func: calls.append(("registered", func.__name__))})())
+
+    chat_module._configure_readline()
+    chat_module._record_history_entry("hello")
+    chat_module._write_history_file()
+
+    assert ("read", chat_module._HISTORY_FILE) in calls
+    assert any(call[0] == "registered" for call in calls)
+    assert ("add", "hello") in calls
+
+    class FailingReadline:
+        def read_history_file(self, path):
+            raise FileNotFoundError
+
+        def set_history_length(self, length):
+            pass
+
+        def write_history_file(self, path):
+            raise OSError
+
+        def add_history(self, entry):
+            raise OSError
+
+    monkeypatch.setattr(chat_module, "readline", FailingReadline())
+    chat_module._configure_readline()
+    chat_module._record_history_entry("hello")
+    chat_module._write_history_file()
+
+    monkeypatch.setattr(chat_module, "readline", None)
+    chat_module._configure_readline()
+    chat_module._write_history_file()
+    chat_module._record_history_entry("hello")
+
+
+def test_start_chat_loop_handles_duplicate_input_and_keyboard_interrupt(monkeypatch):
+    chat_module = _load_chat_module(monkeypatch)
+
+    class FakePipeline:
+        def generate(self, history_input, streamer, **kwargs):
+            streamer("token")
+
+    fake_pipeline = FakePipeline()
+    monkeypatch.setattr(chat_module, "ChatHistory", MockChatHistory, raising=False)
+    monkeypatch.setattr(chat_module.OviEngine, "get_pipeline", lambda model_name, device="CPU": {"pipeline": fake_pipeline})
+    monkeypatch.setattr(chat_module, "_configure_readline", lambda: None)
+    monkeypatch.setattr(chat_module, "_record_history_entry", lambda entry: None)
+
+    class FakeReadline:
+        def get_current_history_length(self):
+            return 1
+
+        def get_history_item(self, index):
+            return "previous"
+
+    monkeypatch.setattr(chat_module, "readline", FakeReadline())
+    monkeypatch.setattr("builtins.input", lambda prompt="": (_ for _ in ()).throw(KeyboardInterrupt()))
+    chat_module.start_chat_loop("demo-model")
