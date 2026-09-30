@@ -26,6 +26,7 @@ from prompt_toolkit.shortcuts import prompt
 
 from ovi_core.menu import draw_menu
 from ovi_core.path import get_models_root
+from ovi_core.path import get_repo_root
 
 MODEL_FILE_NAME = "openvino_model.xml"
 
@@ -189,7 +190,7 @@ def add_model_from_hf_hub() -> None:
         print(f"\nDownloading weights for '{selected_model}' to {new_model_path}...")
         try:
             subprocess.run(
-                ["hf", "download", selected_model, "--local-dir", new_model_path],
+                [f"{get_repo_root()}/ovi-env/bin/hf", "download", selected_model, "--local-dir", new_model_path],
                 check=True
             )
             print(f"\nSuccessfully downloaded and configured model '{model_name}'!")
