@@ -50,7 +50,7 @@ def main_menu(stdscr: curses.window) -> str:
     # Set up the terminal for menu navigation, and draw the initial menu
     stdscr.keypad(True)
     
-    options = ["Launch a model", "Exit"]
+    options = ["Launch a model", "Add a model", "Exit"]
     current_row = 0
 
     while True:
@@ -122,11 +122,13 @@ def main() -> None:
     )
 
     # Temporary testing flag
+    # TODO: Remove and create subparser with extra options
     parser.add_argument(
         "--add-model",
         action="store_true",
         help="Add a model"
     )
+
     subparsers = parser.add_subparsers(dest="command")
     run_parser = subparsers.add_parser("run", help="Run a model")
     run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
@@ -152,8 +154,13 @@ def main() -> None:
                 sys.exit(0)
             elif option == "Launch a model":
                 option_run()
+            elif option == "Add a model":
+                sys.argv = [sys.argv[0]]
+                add_model()
 
         except KeyboardInterrupt:
             print("Caught KeyboardInterrupt. Exiting ovi")
             sys.exit(0)
 
+if __name__ == "__main__":
+    main()
