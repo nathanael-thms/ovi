@@ -157,5 +157,3 @@ def main() -> None:
             print("Caught KeyboardInterrupt. Exiting ovi")
             sys.exit(0)
 
-if __name__ == "__main__":
-    main()
