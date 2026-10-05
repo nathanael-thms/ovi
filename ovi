@@ -126,17 +126,17 @@ def main() -> None:
     run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
 
     add_parser = subparsers.add_parser("add", help="Add a model")
-    add_subparsers = add_parser.add_subparsers(dest="method", help="Method to add a model: 'local' for local directory, 'hf' for Hugging Face Hub")
+    add_subparsers = add_parser.add_subparsers(dest="method", required=False, help="Method to add a model: 'local' for local directory, 'hf' for Hugging Face Hub")
 
     # Setup for 'local' method
     local_parser = add_subparsers.add_parser("local", help="Add a model from a local directory")
-    local_parser.add_argument("path", help="Absolute path to the local directory")
-    local_parser.add_argument("name", help="Name to use for the model")
+    local_parser.add_argument("path", nargs="?", help="Absolute path to the local directory")
+    local_parser.add_argument("name", nargs="?", help="Name to use for the model")
 
     # Parser for 'hf' method
     hf_parser = add_subparsers.add_parser("hf", help="Add a model from Hugging Face Hub")
-    hf_parser.add_argument("model", help="Hugging Face model name under OpenVINO toolkit organisation")
-    hf_parser.add_argument("name", help="Name to use for the model")
+    hf_parser.add_argument("model", nargs="?", help="Hugging Face model name under OpenVINO toolkit organisation")
+    hf_parser.add_argument("name", nargs="?", help="Name to use for the model")
 
     args = parser.parse_args()
 
