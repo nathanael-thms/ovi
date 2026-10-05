@@ -126,7 +126,7 @@ def main() -> None:
     run_parser.add_argument("model_name", nargs="?", help="Optional model name to launch directly")
 
     add_parser = subparsers.add_parser("add", help="Add a model")
-    add_subparsers = add_parser.add_subparsers(dest="method", required=True, help="Method to add a model: 'local' for local directory, 'hf' for Hugging Face Hub")
+    add_subparsers = add_parser.add_subparsers(dest="method", help="Method to add a model: 'local' for local directory, 'hf' for Hugging Face Hub")
 
     # Setup for 'local' method
     local_parser = add_subparsers.add_parser("local", help="Add a model from a local directory")
@@ -143,9 +143,14 @@ def main() -> None:
     # Handle the main application flow
     if args.is_ovi_install:
         print("True")
-    elif args.add_model:
-        sys.argv = [sys.argv[0]]
-        add_model()
+    elif args.command == "add":
+        if args.method == "local" and args.path is not None and args.name is not None:
+            add_model(method="local", path=args.path, name=args.name)
+        elif args.method == "hf" and args.model is not None and args.name is not None:
+            add_model(method="hf", model=args.model, name=args.name)
+        else:
+            sys.argv = [sys.argv[0]]
+            add_model()
     elif args.command == "run" and args.model_name:
         # Directly launch the chat loop if a model has been specified
         chat.start_chat_loop(model_name=args.model_name)
