@@ -14,7 +14,6 @@
 
 # ovi_core/add_model.py
 
-import argparse
 import curses
 import os
 import shutil
@@ -58,20 +57,15 @@ def method_menu(stdscr: curses.window) -> str:
             raise SystemExit(0)
 
 
-def add_model() -> None:
-    """Ask the user how they want to add a model, then dispatch the action."""
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("--local", action="store_true", help="Add a model from a local directory")
-    group.add_argument("--hf", action="store_true", help="Add a model from Hugging Face Hub")
+def add_model(method: str | None = None, path: str | None = None, model: str | None = None, name: str | None = None) -> None:
+    """Dispatch a direct add action if a complete arg-pair is supplied; otherwise use the interactive menu."""
 
-    args = parser.parse_args()
-
-    if args.local:
-        add_model_from_local_directory()
+    if method == "hf" and model is not None and name is not None:
+        add_model_from_hf_hub(model=model, name=name)
         return
-    if args.hf:
-        add_model_from_hf_hub()
+
+    if method == "local" and path is not None and name is not None:
+        add_model_from_local_directory(path=path, name=name)
         return
 
     try:
@@ -89,16 +83,17 @@ def add_model() -> None:
         add_model_from_hf_hub()
 
 
-def add_model_from_local_directory() -> None:
+def add_model_from_local_directory(path:str | None = None, name:str | None = None,) -> None:
     """Copy a local OpenVINO model directory into the managed models directory."""
-    print("Please enter the path to the local directory containing the model:")
-    model_path = input().strip()
+    if path is None:
+        print("Please enter the path to the local directory containing the model:")
+        path = input().strip()
 
-    if not model_path or not os.path.isdir(model_path):
-        print(f"Error: The provided path '{model_path}' is not a valid directory.")
+    if not path or not os.path.isdir(path):
+        print(f"Error: The provided path '{path}' is not a valid directory.")
         raise SystemExit(1)
 
-    required_xml = os.path.join(model_path, MODEL_FILE_NAME)
+    required_xml = os.path.join(path, MODEL_FILE_NAME)
     if not os.path.exists(required_xml):
         print(
             "WARNING: The provided directory does not contain the required OpenVINO IR model "
@@ -109,20 +104,21 @@ def add_model_from_local_directory() -> None:
             print("Aborting model addition.")
             raise SystemExit(1)
 
-    print("Please enter the name you wish to identify the model by:")
-    model_name = input().strip()
-    if not model_name:
+    if name is None:
+        print("Please enter the name you wish to identify the model by:")
+        name = input().strip()
+    if not name:
         print("No model name provided. Aborting.")
         raise SystemExit(1)
 
-    new_model_path = os.path.join(get_models_root(), model_name)
+    new_model_path = os.path.join(get_models_root(), name)
     if os.path.exists(new_model_path):
         print(f"Error: Model directory '{new_model_path}' already exists.")
         raise SystemExit(1)
 
     try:
-        shutil.copytree(model_path, new_model_path)
-        print(f"Successfully added model '{model_name}'")
+        shutil.copytree(path, new_model_path)
+        print(f"Successfully added model '{name}'")
     except OSError as exc:
         print(f"Error: Failed to copy model files: {exc}")
         raise SystemExit(1) from exc
@@ -141,47 +137,51 @@ class SafeFuzzyCompleter(Completer):
                 yield Completion(choice, start_position=-len(text))
 
 
-def add_model_from_hf_hub() -> None:
+def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> None:
     """Pull a model from the OpenVINO organization on Hugging Face."""
     print("Connecting to Hugging Face Hub to grab models...")
     api = HfApi()
 
     try:
         models = api.list_models(author="OpenVINO")
-        model_list = [model.id for model in models]
+        model_list = [model_obj.id for model_obj in models]
 
-        if not model_list:
-            print("No models found under the OpenVINO organization.")
-            return
+        if model is None:
+            if not model_list:
+                print("No models found under the OpenVINO organization.")
+                return
 
-        print("\n=== OpenVINO HuggingFace Search Menu ===")
-        print(" -> Type characters to search & filter models dynamically.")
-        print(" -> Use UP and DOWN arrow keys to navigate suggestions dropdown.")
-        print(" -> Press ENTER to select.\n")
+            print("\n=== OpenVINO HuggingFace Search Menu ===")
+            print(" -> Type characters to search & filter models dynamically.")
+            print(" -> Use UP and DOWN arrow keys to navigate suggestions dropdown.")
+            print(" -> Press ENTER to select.\n")
 
-        selected_model = prompt(
-            "Search OpenVINO Models: ",
-            completer=SafeFuzzyCompleter(model_list),
-            complete_while_typing=True,
-        ).strip()
+            selected_model = prompt(
+                "Search OpenVINO Models: ",
+                completer=SafeFuzzyCompleter(model_list),
+                complete_while_typing=True,
+            ).strip()
 
-        if not selected_model:
-            print("No model selected. Aborting.")
-            return
+            if not selected_model:
+                print("No model selected. Aborting.")
+                return
 
-        if selected_model not in model_list:
-            print(f"\nWARNING: '{selected_model}' matches no official repository under OpenVINO.")
-            return
+            if selected_model not in model_list:
+                print(f"\nWARNING: '{selected_model}' matches no official repository under OpenVINO.")
+                return
+        else:
+            selected_model = model
 
-        default_model_name = selected_model.rsplit("/", 1)[-1]
-        print("\nPlease enter the name you wish to identify the model by:")
-        model_name = input(f"[{default_model_name}] ").strip() or default_model_name
+        if name is None:
+            default_model_name = selected_model.rsplit("/", 1)[-1]
+            print("\nPlease enter the name you wish to identify the model by:")
+            name = input(f"[{default_model_name}] ").strip() or default_model_name
 
-        if not model_name:
+        if not name:
             print("No model name provided. Aborting.")
             return
 
-        new_model_path = os.path.join(get_models_root(), model_name)
+        new_model_path = os.path.join(get_models_root(), name)
         if os.path.exists(new_model_path) and os.listdir(new_model_path):
             print(f"Error: Model directory '{new_model_path}' already exists and is not empty.")
             raise SystemExit(1)
@@ -193,7 +193,7 @@ def add_model_from_hf_hub() -> None:
                 [f"{get_repo_root()}/ovi-env/bin/hf", "download", selected_model, "--local-dir", new_model_path],
                 check=True
             )
-            print(f"\nSuccessfully downloaded and configured model '{model_name}'!")
+            print(f"\nSuccessfully downloaded and configured model '{name}'!")
         except subprocess.CalledProcessError as exc:
             print(f"\nError: The 'hf' downloader failed with exit code {exc.returncode}.")
             raise SystemExit(1) from exc
