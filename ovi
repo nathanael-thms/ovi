@@ -144,9 +144,9 @@ def main() -> None:
     if args.is_ovi_install:
         print("True")
     elif args.command == "add":
-        if args.method == "local" and args.path is not None and args.name is not None:
+        if args.method == "local":
             add_model(method="local", path=args.path, name=args.name)
-        elif args.method == "hf" and args.model is not None and args.name is not None:
+        elif args.method == "hf":
             add_model(method="hf", model=args.model, name=args.name)
         else:
             sys.argv = [sys.argv[0]]

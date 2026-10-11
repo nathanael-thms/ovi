@@ -77,7 +77,7 @@ def test_main_menu_and_model_menu_navigation(monkeypatch):
 
     monkeypatch.setattr(ovi_module, "draw_menu", lambda stdscr, selected_index, options: None)
     fake = FakeWindow([ovi_module.curses.KEY_DOWN, ovi_module.curses.KEY_ENTER])
-    assert ovi_module.main_menu(fake) == "Exit"
+    assert ovi_module.main_menu(fake) == "Add a model"
 
     fake = FakeWindow([ovi_module.curses.KEY_UP, ovi_module.curses.KEY_ENTER])
     assert ovi_module.main_menu(fake) == "Exit"
@@ -124,12 +124,15 @@ def test_model_menu_returns_exit_for_empty_directory(monkeypatch):
     assert ovi_module.model_menu(fake_window) == "Exit"
 
 
-def test_main_handles_add_model_flag_and_help(monkeypatch):
+def test_main_handles_add_command_and_help(monkeypatch):
     ovi_module = _load_cli_module()
     called = {}
 
-    monkeypatch.setattr(ovi_module, "add_model", lambda: called.setdefault("add_model", True))
-    monkeypatch.setattr(sys, "argv", ["ovi", "--add-model"])
+    def mock_add_model(method=None, path=None, model=None, name=None):
+        called["add_model"] = True
+
+    monkeypatch.setattr(ovi_module, "add_model", mock_add_model)
+    monkeypatch.setattr(sys, "argv", ["ovi", "add"])
     ovi_module.main()
     assert called == {"add_model": True}
 

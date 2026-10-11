@@ -60,11 +60,11 @@ def method_menu(stdscr: curses.window) -> str:
 def add_model(method: str | None = None, path: str | None = None, model: str | None = None, name: str | None = None) -> None:
     """Dispatch a direct add action if a complete arg-pair is supplied; otherwise use the interactive menu."""
 
-    if method == "hf" and model is not None and name is not None:
+    if method == "hf":
         add_model_from_hf_hub(model=model, name=name)
         return
 
-    if method == "local" and path is not None and name is not None:
+    if method == "local":
         add_model_from_local_directory(path=path, name=name)
         return
 
@@ -139,7 +139,6 @@ class SafeFuzzyCompleter(Completer):
 
 def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> None:
     """Pull a model from the OpenVINO organization on Hugging Face."""
-    print("Connecting to Hugging Face Hub to grab models...")
     api = HfApi()
 
     try:
@@ -166,11 +165,12 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
                 print("No model selected. Aborting.")
                 return
 
-            if selected_model not in model_list:
-                print(f"\nWARNING: '{selected_model}' matches no official repository under OpenVINO.")
-                return
         else:
             selected_model = model
+
+        if not api.repo_exists(repo_id=selected_model, repo_type="model"):
+            print(f"\nError: The model '{selected_model}' does not exist on the HF hub.")
+            return
 
         if name is None:
             default_model_name = selected_model.rsplit("/", 1)[-1]
