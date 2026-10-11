@@ -13,30 +13,42 @@ def _load_add_model_module():
     return importlib.import_module("ovi_core.add_model")
 
 
-def test_add_model_dispatches_local_flag(monkeypatch):
+def test_add_model_dispatches_local_with_path(monkeypatch):
     module = _load_add_model_module()
     calls = {}
 
-    monkeypatch.setattr(module, "add_model_from_local_directory", lambda: calls.setdefault("method", "local"))
-    monkeypatch.setattr(module, "add_model_from_hf_hub", lambda: calls.setdefault("method", "hf"))
-    monkeypatch.setattr(sys, "argv", ["ovi", "--local"])
+    def mock_local_dir(path=None, name=None):
+        calls["method"] = "local"
+        calls["path"] = path
+        calls["name"] = name
 
-    module.add_model()
+    monkeypatch.setattr(module, "add_model_from_local_directory", mock_local_dir)
+    monkeypatch.setattr(module, "add_model_from_hf_hub", lambda path=None, name=None: calls.setdefault("method", "hf"))
 
-    assert calls == {"method": "local"}
+    module.add_model(method="local", path="/test/path", name=None)
+
+    assert calls["method"] == "local"
+    assert calls["path"] == "/test/path"
+    assert calls["name"] is None
 
 
-def test_add_model_dispatches_hf_flag(monkeypatch):
+def test_add_model_dispatches_hf_with_model(monkeypatch):
     module = _load_add_model_module()
     calls = {}
 
-    monkeypatch.setattr(module, "add_model_from_local_directory", lambda: calls.setdefault("method", "local"))
-    monkeypatch.setattr(module, "add_model_from_hf_hub", lambda: calls.setdefault("method", "hf"))
-    monkeypatch.setattr(sys, "argv", ["ovi", "--hf"])
+    def mock_hf_hub(model=None, name=None):
+        calls["method"] = "hf"
+        calls["model"] = model
+        calls["name"] = name
 
-    module.add_model()
+    monkeypatch.setattr(module, "add_model_from_local_directory", lambda path=None, name=None: calls.setdefault("method", "local"))
+    monkeypatch.setattr(module, "add_model_from_hf_hub", mock_hf_hub)
 
-    assert calls == {"method": "hf"}
+    module.add_model(method="hf", model="OpenVINO/test-model", name=None)
+
+    assert calls["method"] == "hf"
+    assert calls["model"] == "OpenVINO/test-model"
+    assert calls["name"] is None
 
 
 def test_add_model_uses_menu_selection(monkeypatch):
@@ -152,7 +164,7 @@ def test_add_model_from_hf_hub_handles_empty_selection_and_download_success(monk
 
     module.add_model_from_hf_hub()
 
-    fake_api = type("FakeAPI", (), {"list_models": lambda self, author=None: [FakeModel()]})()
+    fake_api = type("FakeAPI", (), {"list_models": lambda self, author=None: [FakeModel()], "repo_exists": lambda self, repo_id, repo_type: True})()
     monkeypatch.setattr(module, "HfApi", lambda: fake_api)
     monkeypatch.setattr(module, "prompt", lambda *args, **kwargs: "")
     monkeypatch.setattr("builtins.input", lambda prompt="": "custom-name")
@@ -170,7 +182,8 @@ def test_add_model_from_hf_hub_handles_empty_selection_and_download_success(monk
     monkeypatch.setattr("builtins.input", lambda prompt="": "custom-name")
 
     module.add_model_from_hf_hub()
-    assert called["command"] == ["hf", "download", "OpenVINO/qwen2.5-7b", "--local-dir", str(target_root / "custom-name")]
+    assert called["command"][-4:] == ["download", "OpenVINO/qwen2.5-7b", "--local-dir", str(target_root / "custom-name")]
+    assert called["command"][0].endswith("hf")
     assert (target_root / "custom-name").is_dir()
 
 
@@ -182,7 +195,14 @@ def test_add_model_from_hf_hub_fails_on_invalid_and_download_errors(monkeypatch,
     class FakeModel:
         id = "OpenVINO/qwen2.5-7b"
 
-    fake_api = type("FakeAPI", (), {"list_models": lambda self, author=None: [FakeModel()]})()
+    fake_api = type(
+        "FakeAPI",
+        (),
+        {
+            "list_models": lambda self, author=None: [FakeModel()],
+            "repo_exists": lambda self, repo_id, repo_type: repo_id == "OpenVINO/qwen2.5-7b",
+        },
+    )()
     monkeypatch.setattr(module, "HfApi", lambda: fake_api)
     monkeypatch.setattr(module, "prompt", lambda *args, **kwargs: "not-a-real-model")
     monkeypatch.setattr(module, "get_models_root", lambda: str(target_root))
