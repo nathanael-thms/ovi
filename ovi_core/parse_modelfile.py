@@ -48,7 +48,7 @@ def get_device_from_modelfile(model_name: str) -> str:
                         if candidate in ("CPU", "GPU", "NPU", "AUTO"):
                             device = candidate
     except FileNotFoundError:
-        print(f"Warning: Modelfile not found for model '{model_name}'. Defaulting to CPU.")
+        print(f"WARNING: Modelfile not found for model '{model_name}'. Defaults will run.")
 
     return device
 
@@ -66,7 +66,7 @@ def get_system_prompt_from_modelfile(model_name: str) -> str:
     in_system_block = False
     end_marker = None  # Tracks either triple quotes (""", ''') or a heredoc tag (EOF)
 
-    try:
+    if os.path.isfile(modelfile_path):
         with open(modelfile_path, 'r') as f:
             for line in f:
                 # Case 1: Looking for the start of the SYSTEM command
@@ -132,9 +132,6 @@ def get_system_prompt_from_modelfile(model_name: str) -> str:
                     # Safely consume content line by line until EOF if closing marker is missing
                     else:
                         system_prompt_lines.append(line)
-
-    except FileNotFoundError:
-        print(f"Warning: Modelfile not found for model '{model_name}'. No system prompt will be used.")
 
     # Join the collected lines and clean up trailing whitespaces
     return "".join(system_prompt_lines).strip()
@@ -250,7 +247,7 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
 
         # Generation parameter legality validator
         def fail(msg: str):
-            print(f"Error: {msg}")
+            print(f"ERROR: {msg}")
             sys.exit(1)
 
         # num_beams sanity

@@ -90,7 +90,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
         path = input().strip()
 
     if not path or not os.path.isdir(path):
-        print(f"Error: The provided path '{path}' is not a valid directory.")
+        print(f"ERROR: The provided path '{path}' is not a valid directory.")
         raise SystemExit(1)
 
     required_xml = os.path.join(path, MODEL_FILE_NAME)
@@ -113,7 +113,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
 
     new_model_path = os.path.join(get_models_root(), name)
     if os.path.exists(new_model_path):
-        print(f"Error: Model directory '{new_model_path}' already exists.")
+        print(f"ERROR: Model directory '{new_model_path}' already exists.")
         raise SystemExit(1)
 
     try:
@@ -169,7 +169,7 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
             selected_model = model
 
         if not api.repo_exists(repo_id=selected_model, repo_type="model"):
-            print(f"\nError: The model '{selected_model}' does not exist on the HF hub.")
+            print(f"\nERROR: The model '{selected_model}' does not exist on the HF hub.")
             return
 
         if name is None:
@@ -183,7 +183,7 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
 
         new_model_path = os.path.join(get_models_root(), name)
         if os.path.exists(new_model_path) and os.listdir(new_model_path):
-            print(f"Error: Model directory '{new_model_path}' already exists and is not empty.")
+            print(f"ERROR: Model directory '{new_model_path}' already exists and is not empty.")
             raise SystemExit(1)
         os.makedirs(new_model_path, exist_ok=True)
 
@@ -199,5 +199,5 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
             raise SystemExit(1) from exc
 
     except Exception as exc:
-        print(f"Error: {exc}")
+        print(f"ERROR: {exc}")
         raise SystemExit(1) from exc

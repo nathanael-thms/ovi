@@ -30,7 +30,7 @@ if sys.prefix == sys.base_prefix:
         # Relaunch the script using the venv's Python, passing all arguments
         os.execv(VENV_PYTHON, [VENV_PYTHON] + sys.argv)
     else:
-        sys.exit(f"Error: Virtual environment not found at {VENV_PYTHON}. Please run setup.sh first.")
+        sys.exit(f"ERROR: Virtual environment not found at {VENV_PYTHON}. Please run setup.sh first.")
 
 os.environ.setdefault('ESCDELAY', '25')
 
