@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import curses
+import os
+
+from ovi_core.path import get_models_root
 
 
 def init_colors() -> None:
@@ -56,3 +59,51 @@ def draw_menu(stdscr: curses.window, selected_index: int, options: list[str]) ->
         stdscr.addstr(0, 0, "Terminal too small!")
     finally:
         stdscr.refresh()
+
+
+def run_menu(stdscr: curses.window, options: list[str], empty_message: str | None = None, draw_fn=draw_menu) -> str:
+    stdscr.keypad(True)
+    current_row = 0
+
+    if not options:
+        if empty_message:
+            stdscr.erase()
+            stdscr.addstr(0, 0, empty_message)
+            stdscr.refresh()
+            stdscr.getch()
+        return "Exit"
+
+    while True:
+        draw_fn(stdscr, current_row, options)
+        key = stdscr.getch()
+
+        if key == curses.KEY_UP:
+            current_row = (current_row - 1) % len(options)
+        elif key == curses.KEY_DOWN:
+            current_row = (current_row + 1) % len(options)
+        elif key in (curses.KEY_ENTER, 10, 13):
+            return options[current_row]
+        elif key in (curses.KEY_LEFT, ord("b"), ord("B")):
+            return "Back"
+        elif key in (27, ord("q"), ord("Q")):
+            raise SystemExit(0)
+
+
+def main_menu(stdscr: curses.window) -> str:
+    options = ["Launch a model", "Add a model", "Exit"]
+    return run_menu(stdscr, options, draw_fn=draw_menu)
+
+
+def model_menu(stdscr: curses.window, models_dir: str | None = None) -> str:
+    models_root = get_models_root() if models_dir is None else models_dir
+    models = [d for d in os.listdir(models_root) if os.path.isdir(os.path.join(models_root, d))]
+    return run_menu(stdscr, models, empty_message="No models found. Press any key to exit", draw_fn=draw_menu)
+
+
+def method_menu(stdscr: curses.window) -> str:
+    options = [
+        "Add a model from a local directory",
+        "Add a model from Hugging Face Hub",
+        "Exit",
+    ]
+    return run_menu(stdscr, options, draw_fn=draw_menu)

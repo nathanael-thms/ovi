@@ -23,38 +23,23 @@ from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.shortcuts import prompt
 
+from ovi_core.menu import method_menu as _method_menu
+from ovi_core import menu as menu_lib
 from ovi_core.menu import draw_menu
 from ovi_core.path import get_models_root
 from ovi_core.path import get_repo_root
 
 MODEL_FILE_NAME = "openvino_model.xml"
 
+draw_menu = menu_lib.draw_menu
+
 
 def method_menu(stdscr: curses.window) -> str:
-    """Display the model-selection menu and return the chosen action."""
-    stdscr.keypad(True)
-
-    options = [
+    return menu_lib.run_menu(stdscr, [
         "Add a model from a local directory",
         "Add a model from Hugging Face Hub",
-        "Exit"
-    ]
-    current_row = 0
-
-    while True:
-        draw_menu(stdscr, current_row, options)
-        key = stdscr.getch()
-
-        if key == curses.KEY_UP:
-            current_row = (current_row - 1) % len(options)
-        elif key == curses.KEY_DOWN:
-            current_row = (current_row + 1) % len(options)
-        elif key in (curses.KEY_ENTER, 10, 13):
-            return options[current_row]
-        elif key in (curses.KEY_LEFT, ord("b"), ord("B")):
-            return "Back"
-        elif key in (27, ord("q"), ord("Q")):
-            raise SystemExit(0)
+        "Exit",
+    ], draw_fn=draw_menu)
 
 
 def add_model(method: str | None = None, path: str | None = None, model: str | None = None, name: str | None = None) -> None:
