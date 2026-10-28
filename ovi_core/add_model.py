@@ -190,6 +190,15 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
         raise SystemExit(1) from exc
 
 def open_modelfile_editor(model_name: str) -> None:
+    if not sys.stdin.isatty():
+        print("WARNING: Non-Interactive shell detected, not opening editor")
+        return
+    else:
+        print("Would you like to open and edit modelfile now? y/n or press any other key to cancel")
+        open_modelfile_true = input()
+        if not open_modelfile_true.lower() == "y":
+            return
+
     modelfile_path = get_model_file_path(model_name)
 
     abs_path = os.path.abspath(modelfile_path)
