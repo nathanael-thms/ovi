@@ -18,6 +18,7 @@ import curses
 import os
 import shutil
 import subprocess
+import sys
 
 from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
@@ -27,6 +28,7 @@ from ovi_core.menu import method_menu as _method_menu
 from ovi_core import menu as menu_lib
 from ovi_core.menu import draw_menu
 from ovi_core.path import get_models_root
+from ovi_core.path import get_model_file_path
 from ovi_core.path import get_repo_root
 
 MODEL_FILE_NAME = "openvino_model.xml"
@@ -186,3 +188,24 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
     except Exception as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1) from exc
+
+def open_modelfile_editor(model_name: str) -> None:
+    modelfile_path = get_model_file_path(model_name)
+
+    abs_path = os.path.abspath(modelfile_path)
+    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+    with open(abs_path, 'a'):
+        os.utime(abs_path, None)
+
+    editor = os.environ.get('VISUAL') or os.environ.get('EDITOR') or 'nano'
+
+    try:
+        subprocess.run([editor, abs_path], check=True)
+    except FileNotFoundError:
+        try:
+            subprocess.run(['vi', abs_path], check=True)
+        except Exception as e:
+            sys.exit(f"Failed to open editor: {e}")
+    except subprocess.CalledProcessError as e:
+        sys.exit(f"Editor exited with error: {e}")
