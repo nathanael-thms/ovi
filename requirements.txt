@@ -1,7 +1,7 @@
-numpy==2.4.6
-openvino==2026.2.1
-openvino-genai==2026.2.1.0
+numpy==2.5.4
+openvino==2026.4.1
+openvino-genai==2026.4.1.0
 openvino-telemetry==2025.2.0
-openvino-tokenizers==2026.2.1.0
-huggingface_hub==1.32.0
+openvino-tokenizers==2026.4.1.0
+huggingface_hub==2.3.0
 prompt_toolkit==3.0.53
