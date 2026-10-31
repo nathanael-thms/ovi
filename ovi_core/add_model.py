@@ -19,6 +19,7 @@ import os
 import shutil
 import subprocess
 import sys
+import readchar
 
 from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
@@ -110,6 +111,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
         print(f"Error: Failed to copy model files: {exc}")
         raise SystemExit(1) from exc
 
+    open_modelfile_editor(name)
 
 class SafeFuzzyCompleter(Completer):
     """Allow simple substring matching without regex tokenization surprises."""
@@ -184,7 +186,7 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
         except subprocess.CalledProcessError as exc:
             print(f"\nError: The 'hf' downloader failed with exit code {exc.returncode}.")
             raise SystemExit(1) from exc
-
+        open_modelfile_editor(name)
     except Exception as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1) from exc
@@ -195,7 +197,7 @@ def open_modelfile_editor(model_name: str) -> None:
         return
     else:
         print("Would you like to open and edit modelfile now? y/n or press any other key to cancel")
-        open_modelfile_true = input()
+        open_modelfile_true = readchar.readkey()
         if not open_modelfile_true.lower() == "y":
             return
 
