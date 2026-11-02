@@ -16,20 +16,20 @@
 
 import curses
 import os
-import readchar
 import shutil
 import subprocess
-import sys
 import textwrap
 
+import readchar
+import sys
 from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.shortcuts import prompt
 
 from ovi_core import menu as menu_lib
 from ovi_core.menu import draw_menu
-from ovi_core.path import get_models_root
 from ovi_core.path import get_model_file_path
+from ovi_core.path import get_models_root
 from ovi_core.path import get_repo_root
 
 MODEL_FILE_NAME = "openvino_model.xml"
