@@ -26,7 +26,6 @@ from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.shortcuts import prompt
 
-from ovi_core.menu import method_menu as _method_menu
 from ovi_core import menu as menu_lib
 from ovi_core.menu import draw_menu
 from ovi_core.path import get_models_root
