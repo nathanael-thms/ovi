@@ -46,7 +46,12 @@ def open_modelfile_editor(model_name: str) -> None:
     modelfile_path = get_model_file_path(model_name)
 
     abs_path = os.path.abspath(modelfile_path)
-    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+    model_dir = os.path.dirname(abs_path)
+
+    # Check if the parent model directory exists before proceeding
+    if not os.path.exists(model_dir):
+        print("Model Not Found")
+        return
 
     # Write the template only if the file does not already exist
     if not os.path.exists(abs_path):
