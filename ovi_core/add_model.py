@@ -18,7 +18,6 @@ import curses
 import os
 import shutil
 import subprocess
-import textwrap
 
 import readchar
 import sys
@@ -28,7 +27,7 @@ from prompt_toolkit.shortcuts import prompt
 
 from ovi_core import menu as menu_lib
 from ovi_core.menu import draw_menu
-from ovi_core.path import get_model_file_path
+from ovi_core.modelfile_editor import open_modelfile_editor
 from ovi_core.path import get_models_root
 from ovi_core.path import get_repo_root
 
@@ -111,7 +110,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
         print(f"Error: Failed to copy model files: {exc}")
         raise SystemExit(1) from exc
 
-    open_modelfile_editor(name)
+    prompt_for_modelfile_editor(name)
 
 class SafeFuzzyCompleter(Completer):
     """Allow simple substring matching without regex tokenization surprises."""
@@ -186,12 +185,12 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
         except subprocess.CalledProcessError as exc:
             print(f"\nError: The 'hf' downloader failed with exit code {exc.returncode}.")
             raise SystemExit(1) from exc
-        open_modelfile_editor(name)
+        prompt_for_modelfile_editor(name)
     except Exception as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1) from exc
 
-def open_modelfile_editor(model_name: str) -> None:
+def prompt_for_modelfile_editor(model_name: str) -> None:
     if not sys.stdin.isatty():
         print("WARNING: Non-Interactive shell detected, not opening editor")
         return
@@ -200,45 +199,4 @@ def open_modelfile_editor(model_name: str) -> None:
         open_modelfile_true = readchar.readkey()
         if not open_modelfile_true.lower() == "y":
             return
-
-    DEFAULT_MODELFILE_TEMPLATE = """
-    # ovi Modelfile
-    # For syntax, see https://ovi.nattho.com/models/#syntax
-    # Currently all teh lines are commented out, you may uncomment, remove, and edit these lines as you wish
-
-    # Select the target device
-    # DEVICE CPU
-    
-    # System prompt
-    # SYSTEM "You are a helpful coding assistant."
-    
-    # Generation settings
-    # PARAMETER max_new_tokens 256
-    # PARAMETER temperature 0.7
-    # PARAMETER top_p 0.9
-    # PARAMETER stop_strings "END"
-    # PARAMETER stop_token_ids 12,13,99
-    """
-
-    modelfile_path = get_model_file_path(model_name)
-
-    abs_path = os.path.abspath(modelfile_path)
-    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-
-    # Write the template only if the file does not already exist
-    if not os.path.exists(abs_path):
-        with open(abs_path, 'w', encoding='utf-8') as file:
-            # textwrap.dedent removes any accidental leading indentation from multi-line strings
-            file.write(textwrap.dedent(DEFAULT_MODELFILE_TEMPLATE).strip() + "\n")
-
-    editor = os.environ.get('VISUAL') or os.environ.get('EDITOR') or 'nano'
-
-    try:
-        subprocess.run([editor, abs_path], check=True)
-    except FileNotFoundError:
-        try:
-            subprocess.run(['vi', abs_path], check=True)
-        except Exception as e:
-            sys.exit(f"Failed to open editor: {e}")
-    except subprocess.CalledProcessError as e:
-        sys.exit(f"Editor exited with error: {e}")
+    open_modelfile_editor(model_name)
