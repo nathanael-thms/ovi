@@ -201,6 +201,25 @@ def open_modelfile_editor(model_name: str) -> None:
         if not open_modelfile_true.lower() == "y":
             return
 
+    DEFAULT_MODELFILE_TEMPLATE = """
+    # ovi Modelfile
+    # For syntax, see https://ovi.nattho.com/models/#syntax
+    # Currently all teh lines are commented out, you may uncomment, remove, and edit these lines as you wish
+
+    # Select the target device
+    # DEVICE CPU
+    
+    # System prompt
+    # SYSTEM "You are a helpful coding assistant."
+    
+    # Generation settings
+    # PARAMETER max_new_tokens 256
+    # PARAMETER temperature 0.7
+    # PARAMETER top_p 0.9
+    # PARAMETER stop_strings "END"
+    # PARAMETER stop_token_ids 12,13,99
+    """
+
     modelfile_path = get_model_file_path(model_name)
 
     abs_path = os.path.abspath(modelfile_path)
