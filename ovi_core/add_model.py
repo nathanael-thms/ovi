@@ -16,10 +16,11 @@
 
 import curses
 import os
+import readchar
 import shutil
 import subprocess
 import sys
-import readchar
+import textwrap
 
 from huggingface_hub import HfApi
 from prompt_toolkit.completion import Completer, Completion
@@ -225,8 +226,11 @@ def open_modelfile_editor(model_name: str) -> None:
     abs_path = os.path.abspath(modelfile_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
 
-    with open(abs_path, 'a'):
-        os.utime(abs_path, None)
+    # Write the template only if the file does not already exist
+    if not os.path.exists(abs_path):
+        with open(abs_path, 'w', encoding='utf-8') as file:
+            # textwrap.dedent removes any accidental leading indentation from multi-line strings
+            file.write(textwrap.dedent(DEFAULT_MODELFILE_TEMPLATE).strip() + "\n")
 
     editor = os.environ.get('VISUAL') or os.environ.get('EDITOR') or 'nano'
 
