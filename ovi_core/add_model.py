@@ -33,9 +33,6 @@ from ovi_core.path import get_repo_root
 
 MODEL_FILE_NAME = "openvino_model.xml"
 
-draw_menu = menu_lib.draw_menu
-
-
 def method_menu(stdscr: curses.window) -> str:
     return menu_lib.run_menu(stdscr, [
         "Add a model from a local directory",

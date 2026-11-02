@@ -24,7 +24,7 @@ from ovi_core.path import get_model_file_path
 
 
 def open_modelfile_editor(model_name: str) -> None:
-    DEFAULT_MODELFILE_TEMPLATE = """
+    default_modelfile_template = """
     # ovi Modelfile
     # For syntax, see https://ovi.nattho.com/models/#syntax
     # Currently all teh lines are commented out, you may uncomment, remove, and edit these lines as you wish
@@ -57,7 +57,7 @@ def open_modelfile_editor(model_name: str) -> None:
     if not os.path.exists(abs_path):
         with open(abs_path, 'w', encoding='utf-8') as file:
             # textwrap.dedent removes any accidental leading indentation from multi-line strings
-            file.write(textwrap.dedent(DEFAULT_MODELFILE_TEMPLATE).strip() + "\n")
+            file.write(textwrap.dedent(default_modelfile_template).strip() + "\n")
 
     editor = os.environ.get('VISUAL') or os.environ.get('EDITOR') or 'nano'
 
