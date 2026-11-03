@@ -70,7 +70,7 @@ def add_model(method: str | None = None, path: str | None = None, model: str | N
 def add_model_from_local_directory(path:str | None = None, name:str | None = None,) -> None:
     """Copy a local OpenVINO model directory into the managed models directory."""
     if path is None:
-        print("Please enter the path to the local directory containing the model:")
+        print("Please enter the ABSOLUTE path to the local directory containing the model:")
         path = input().strip()
 
     if not path or not os.path.isdir(path):
