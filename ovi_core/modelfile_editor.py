@@ -27,7 +27,7 @@ def open_modelfile_editor(model_name: str) -> None:
     default_modelfile_template = """
     # ovi Modelfile
     # For syntax, see https://ovi.nattho.com/models/#syntax
-    # Currently all teh lines are commented out, you may uncomment, remove, and edit these lines as you wish
+    # Currently all the lines are commented out, you may uncomment, remove, and edit these lines as you wish
 
     # Select the target device
     # DEVICE CPU
