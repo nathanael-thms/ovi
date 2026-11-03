@@ -1,8 +1,9 @@
 import importlib.machinery
 import importlib.util
-import os
-import sys
+import subprocess
 from pathlib import Path
+
+import sys
 
 
 def _load_cli_module():
@@ -142,6 +143,38 @@ def test_main_handles_add_command_and_help(monkeypatch):
 
     monkeypatch.setattr(sys, "argv", ["ovi", "--is-ovi-install"])
     assert ovi_module.main() is None
+
+
+def test_add_and_edit_cli_exit_codes(tmp_path):
+    script_path = Path(__file__).resolve().parents[1] / "ovi"
+    source_dir = tmp_path / "source-model"
+    source_dir.mkdir()
+    (source_dir / "openvino_model.xml").write_text("<model />")
+
+    reserved_name = subprocess.run(
+        [sys.executable, str(script_path), "add", "local", str(source_dir), "Back"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    invalid_path = subprocess.run(
+        [sys.executable, str(script_path), "add", "local", str(tmp_path / "missing"), "model"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    missing_model = subprocess.run(
+        [sys.executable, str(script_path), "edit", "model-that-does-not-exist"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert reserved_name.returncode == 1
+    assert "reserved model name" in reserved_name.stdout
+    assert invalid_path.returncode == 1
+    assert missing_model.returncode == 0
+    assert "Model Not Found" in missing_model.stdout
 
 
 def test_option_run_launches_selected_model(monkeypatch):

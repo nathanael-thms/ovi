@@ -73,7 +73,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
         print("Please enter the ABSOLUTE path to the local directory containing the model:")
         path = input().strip()
 
-    if not path or not os.path.isdir(path):
+    if not path or not os.path.isabs(path) or not os.path.isdir(path):
         print(f"ERROR: The provided path '{path}' is not a valid directory.")
         raise SystemExit(1)
 
@@ -94,6 +94,7 @@ def add_model_from_local_directory(path:str | None = None, name:str | None = Non
     if not name:
         print("No model name provided. Aborting.")
         raise SystemExit(1)
+    _validate_model_name(name)
 
     new_model_path = os.path.join(get_models_root(), name)
     if os.path.exists(new_model_path):
@@ -165,6 +166,7 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
         if not name:
             print("No model name provided. Aborting.")
             return
+        _validate_model_name(name)
 
         new_model_path = os.path.join(get_models_root(), name)
         if os.path.exists(new_model_path) and os.listdir(new_model_path):
@@ -186,6 +188,13 @@ def add_model_from_hf_hub(model: str | None = None, name: str | None = None) -> 
     except Exception as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1) from exc
+
+
+def _validate_model_name(name: str) -> None:
+    if name in {"Back", "Exit"}:
+        print(f"ERROR: '{name}' is a reserved model name.")
+        raise SystemExit(1)
+
 
 def prompt_for_modelfile_editor(model_name: str) -> None:
     if not sys.stdin.isatty():
