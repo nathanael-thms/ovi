@@ -17,6 +17,8 @@ Documentation is available at [https://ovi.nattho.com](https://ovi.nattho.com).
 
 - **Modelfiles** — Define parameters like temperature, top‑p, and other generation parameters for each model, chose an execution device, and set a custom system prompt
 
+- **Model Management** — Add models from Hugging Face Hub or local directories, and edit Modelfiles for each model via friendly wizards.
+
 ## Upcoming Features
 
 - **Internal /x Command Interface** — Inspect and adjust runtime parameters from within the chat shell.
