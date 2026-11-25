@@ -15,7 +15,7 @@ Documentation is available at [https://ovi.nattho.com](https://ovi.nattho.com).
 
 - **Interactive Chat Shell** — Navigate previous prompts using ↑/↓ for a smooth REPL‑style workflow.
 
-- **Modelfiles** — Define parameters like temperature, top‑p, and other generation parameters for each model, chose an execution device, and set a custom system prompt
+- **Modelfiles** — Define parameters like temperature, top‑p, and other generation parameters for each model, choose an execution device, and set a custom system prompt.
 
 - **Model Management** — Add models from Hugging Face Hub or local directories, and edit Modelfiles for each model via friendly wizards.
 
