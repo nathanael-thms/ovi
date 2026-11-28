@@ -14,13 +14,14 @@
  
 # ovi_core/manager.py
 import os
-import sys
+
 import openvino_genai as ov_genai
 
-from ovi_core.path import get_model_path
+from ovi_core.exceptions import ModelNotFoundError, ModelCompilationError
 from ovi_core.parse_modelfile import get_device_from_modelfile
 from ovi_core.parse_modelfile import get_parameters_from_modelfile
 from ovi_core.parse_modelfile import get_system_prompt_from_modelfile
+from ovi_core.path import get_model_path
 
 
 class OviEngine:
@@ -55,12 +56,10 @@ class OviEngine:
         # Get the model directory path based on the model name
         model_dir = get_model_path(model_name)
 
-
-        # Ensure it is a true OpenVINO IR model directory by checking for the required XML file
+        # Raise exception if the required OpenVINO IR model file does not exist
         required_xml = os.path.join(model_dir, "openvino_model.xml")
         if not os.path.exists(required_xml):
-            print(f"Error: OpenVINO IR model not found at: {model_dir}")
-            sys.exit(1)
+            raise ModelNotFoundError(model_name, model_dir)
 
         print(f"Loading model '{model_name}' onto target device: {device}...")
 
@@ -81,4 +80,4 @@ class OviEngine:
 
         except Exception as e:
             print(f"Native OpenVINO Compilation Failed: {e}")
-            sys.exit(1)
+            raise ModelCompilationError(model_name, device, e) from e

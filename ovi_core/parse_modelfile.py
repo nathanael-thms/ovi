@@ -15,9 +15,10 @@
 # ovi_core/parse_modelfile.py
 
 import os
-import sys
 
+from ovi_core.exceptions import ModelfileConfigError
 from ovi_core.path import get_model_file_path
+
 
 def get_device_from_modelfile(model_name: str) -> str:
     """
@@ -232,8 +233,10 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
                         ]
                     else:
                         value = cast_type(raw_value)
-                except ValueError:
-                    continue
+                except ValueError as e:
+                    raise ModelfileConfigError(
+                        model_name, f"Invalid value '{raw_value}' for parameter '{key}'"
+                    ) from e
 
                 # Store or merge values
                 if key == "stop_token_ids" and key in parameters:
@@ -247,8 +250,7 @@ def get_parameters_from_modelfile(model_name: str) -> dict:
 
         # Generation parameter legality validator
         def fail(msg: str):
-            print(f"ERROR: {msg}")
-            sys.exit(1)
+            raise ModelfileConfigError(model_name, msg)
 
         # num_beams sanity
         nb = parameters.get("num_beams", 1)

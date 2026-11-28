@@ -2,8 +2,11 @@
 
 import atexit
 import os
+import sys
+
 import openvino_genai as ov_genai
 
+from ovi_core.exceptions import OviEngineError
 from ovi_core.manager import OviEngine
 
 try:
@@ -69,8 +72,11 @@ def _record_history_entry(entry: str) -> None:
 
 
 def start_chat_loop(model_name: str):
-    engine_data = OviEngine.get_pipeline(model_name)
-
+    try:
+        engine_data = OviEngine.get_pipeline(model_name)
+    except OviEngineError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     # Safely unpack the native components out of the container
     pipe = engine_data["pipeline"]
     system_prompt = engine_data.get("system_prompt", "")
