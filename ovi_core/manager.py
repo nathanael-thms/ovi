@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
  
-# ovi_core/load.py
+# ovi_core/manager.py
 import os
 import sys
 import openvino_genai as ov_genai

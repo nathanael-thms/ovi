@@ -4,7 +4,7 @@ import atexit
 import os
 import openvino_genai as ov_genai
 
-from ovi_core.load import OviEngine
+from ovi_core.manager import OviEngine
 
 try:
     import readline
